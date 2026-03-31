@@ -1,0 +1,13 @@
+# Dados sensíveis — nunca subir para o GitHub
+*.xlsx
+*.xls
+*.csv
+
+# Arquivos de sistema
+Thumbs.db
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
