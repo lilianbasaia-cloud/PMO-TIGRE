@@ -158,6 +158,7 @@ tbody td{padding:8px 12px;vertical-align:middle}
   <h1>PMO TIGRE <span>&#8212; BKO</span></h1>
   <div class="header-actions">
     <span class="ts" id="hts">&#8212;</span>
+    <button class="btn btn-outline btn-sm" onclick="reloadFromGitHub()">&#8635; Atualizar</button>
     <button class="btn btn-outline btn-sm" onclick="triggerImport()">&#8593; Importar Excel</button>
     <button class="btn btn-outline btn-sm" onclick="exportExcel()">&#8595; Exportar Excel</button>
     <button class="btn btn-primary btn-sm" onclick="openNew()">+ Nova Tarefa</button>
@@ -644,6 +645,11 @@ function importExcel(input){
 }
 
 // ── LOAD FROM URL ────────────────────────────────────────────────────────────
+function reloadFromGitHub() {
+  if(!confirm('Isso vai substituir os dados locais pelos dados mais recentes do GitHub. Continuar?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  loadFromURL(AUTO_URL, false);
+}
 function loadFromURL(url, silent) {
   if(!silent) toast('Carregando...','ok');
   fetch(url)
