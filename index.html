@@ -4,1075 +4,717 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PMO TIGRE — Dashboard</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-/* ── Reset & Base ── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --bg:       #0f172a;
-  --surface:  #1e293b;
-  --surface2: #293548;
-  --border:   #334155;
-  --text:     #f1f5f9;
-  --text2:    #94a3b8;
-  --text3:    #64748b;
-
-  --green:    #10b981;
-  --blue:     #3b82f6;
-  --yellow:   #f59e0b;
-  --red:      #ef4444;
-  --gray:     #475569;
-  --purple:   #8b5cf6;
-  --teal:     #14b8a6;
-  --orange:   #f97316;
-  --cyan:     #06b6d4;
-  --indigo:   #6366f1;
-  --pink:     #ec4899;
-
-  --radius:   10px;
-  --shadow:   0 4px 24px rgba(0,0,0,.4);
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f1f5f9;--surface:#fff;--surface2:#f8fafc;--border:#e2e8f0;
+  --text:#1e293b;--text2:#64748b;--text3:#94a3b8;
+  --green:#10b981;--blue:#3b82f6;--yellow:#f59e0b;--red:#ef4444;
+  --indigo:#6366f1;--teal:#14b8a6;--orange:#f97316;
+  --radius:10px;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 16px rgba(0,0,0,.1);
 }
-body {
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  font-size: 14px;
-}
-
-/* ── Layout ── */
-header {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 14px 24px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 2px 12px rgba(0,0,0,.3);
-}
-.logo {
-  width: 40px; height: 40px;
-  background: linear-gradient(135deg, var(--blue), var(--purple));
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 18px; color: #fff; flex-shrink: 0;
-}
-header h1 { font-size: 18px; font-weight: 700; }
-header h1 span { color: var(--text2); font-weight: 400; font-size: 13px; margin-left: 8px; }
-.header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
-#last-update { font-size: 12px; color: var(--text3); }
-#refresh-btn {
-  background: var(--surface2); border: 1px solid var(--border);
-  color: var(--text2); padding: 6px 14px; border-radius: 6px;
-  cursor: pointer; font-size: 12px; transition: all .2s;
-}
-#refresh-btn:hover { border-color: var(--blue); color: var(--blue); }
-
-main { padding: 20px 24px; max-width: 1600px; margin: 0 auto; }
-
-/* ── Stats ── */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
-}
-.stat-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  position: relative;
-  overflow: hidden;
-  transition: transform .15s;
-}
-.stat-card:hover { transform: translateY(-2px); }
-.stat-card::before {
-  content: '';
-  position: absolute; top: 0; left: 0;
-  width: 100%; height: 3px;
-  background: var(--accent);
-}
-.stat-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
-.stat-value { font-size: 28px; font-weight: 700; color: var(--accent); }
-.stat-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
-
-/* ── Filters ── */
-.filters {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  margin-bottom: 20px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: flex-end;
-}
-.filter-group { display: flex; flex-direction: column; gap: 4px; }
-.filter-group label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; }
-.filter-group select, .filter-group input {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 7px 10px;
-  border-radius: 6px;
-  font-size: 13px;
-  outline: none;
-  min-width: 160px;
-  transition: border-color .2s;
-}
-.filter-group select:focus, .filter-group input:focus { border-color: var(--blue); }
-.filter-group select option { background: var(--surface2); }
-
-.view-toggle { margin-left: auto; display: flex; gap: 4px; }
-.view-btn {
-  background: var(--surface2); border: 1px solid var(--border);
-  color: var(--text2); padding: 7px 14px; border-radius: 6px;
-  cursor: pointer; font-size: 13px; transition: all .2s;
-}
-.view-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
-.view-btn:hover:not(.active) { border-color: var(--blue); color: var(--blue); }
-
-/* ── Kanban ── */
-.kanban {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
-}
-.kanban-col {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-.kanban-col-header {
-  padding: 12px 16px;
-  display: flex; align-items: center; gap: 8px;
-  border-bottom: 1px solid var(--border);
-  font-weight: 600; font-size: 13px;
-}
-.col-dot { width: 10px; height: 10px; border-radius: 50%; }
-.col-count {
-  margin-left: auto;
-  background: var(--surface2);
-  border-radius: 20px;
-  padding: 2px 10px;
-  font-size: 12px; color: var(--text2);
-}
-.kanban-cards { padding: 12px; display: flex; flex-direction: column; gap: 8px; max-height: 70vh; overflow-y: auto; }
-
-/* ── Cards ── */
-.task-card {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
-  cursor: pointer;
-  transition: all .15s;
-  border-left: 3px solid var(--tema-color, var(--border));
-}
-.task-card:hover { border-color: var(--blue); transform: translateX(2px); box-shadow: var(--shadow); }
-.card-top { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 8px; }
-.card-title { font-size: 13px; font-weight: 600; flex: 1; line-height: 1.4; }
-.badge {
-  font-size: 10px; font-weight: 600; padding: 2px 7px;
-  border-radius: 20px; white-space: nowrap; flex-shrink: 0;
-}
-.badge-generated { background: rgba(251,191,36,.15); color: #fbbf24; border: 1px solid rgba(251,191,36,.3); }
-.badge-priority   { background: rgba(239,68,68,.15);  color: #ef4444;  border: 1px solid rgba(239,68,68,.3); }
-.card-meta { display: flex; flex-wrap: wrap; gap: 6px; }
-.meta-chip {
-  display: flex; align-items: center; gap: 4px;
-  font-size: 11px; color: var(--text3);
-}
-.meta-chip svg { opacity: .6; }
-.tema-badge {
-  font-size: 10px; font-weight: 600; padding: 2px 8px;
-  border-radius: 4px; color: #fff;
-}
-.rec-badge {
-  font-size: 10px; padding: 2px 7px;
-  border-radius: 20px; background: rgba(99,102,241,.15);
-  color: var(--indigo); border: 1px solid rgba(99,102,241,.3);
-}
-
-/* ── Table ── */
-#view-table { display: none; }
-.tbl-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-thead th {
-  background: var(--surface);
-  padding: 10px 14px;
-  text-align: left;
-  font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
-  color: var(--text3); white-space: nowrap;
-  border-bottom: 1px solid var(--border);
-  cursor: pointer; user-select: none;
-}
-thead th:hover { color: var(--text); }
-thead th .sort-icon { opacity: .4; margin-left: 4px; }
-thead th.sorted .sort-icon { opacity: 1; color: var(--blue); }
-tbody tr { border-bottom: 1px solid rgba(51,65,85,.5); transition: background .1s; }
-tbody tr:hover { background: var(--surface); }
-tbody td { padding: 10px 14px; vertical-align: middle; }
-tbody tr.generated-row td:first-child::before {
-  content: '↻ '; color: var(--yellow); font-size: 10px;
-}
-
-/* ── Status pills ── */
-.pill {
-  display: inline-block; padding: 3px 10px;
-  border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap;
-}
-.pill-green   { background: rgba(16,185,129,.15);  color: var(--green);  }
-.pill-blue    { background: rgba(59,130,246,.15);   color: var(--blue);   }
-.pill-yellow  { background: rgba(245,158,11,.15);   color: var(--yellow); }
-.pill-red     { background: rgba(239,68,68,.15);    color: var(--red);    }
-.pill-gray    { background: rgba(71,85,105,.25);    color: var(--text2);  }
-.pill-tbd     { background: rgba(99,102,241,.15);   color: var(--indigo); }
-
-/* ── Modal ── */
-.modal-overlay {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,.6); z-index: 200;
-  align-items: center; justify-content: center;
-}
-.modal-overlay.open { display: flex; }
-.modal {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 14px; padding: 28px; width: 90%; max-width: 560px;
-  max-height: 80vh; overflow-y: auto;
-  box-shadow: 0 24px 64px rgba(0,0,0,.6);
-  animation: slideUp .2s ease;
-}
-@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } }
-.modal-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 20px; }
-.modal-header h2 { font-size: 16px; font-weight: 700; flex: 1; line-height: 1.4; }
-.modal-close {
-  background: var(--surface2); border: 1px solid var(--border);
-  color: var(--text2); width: 32px; height: 32px; border-radius: 6px;
-  cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; transition: all .15s;
-}
-.modal-close:hover { border-color: var(--red); color: var(--red); }
-.modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
-.modal-field label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; display: block; }
-.modal-field p { font-size: 13px; color: var(--text); }
-.modal-comments {
-  background: var(--surface2); border-radius: 8px;
-  padding: 12px; font-size: 13px; color: var(--text2); line-height: 1.6; margin-top: 4px;
-}
-
-/* ── Empty state ── */
-.empty-state {
-  text-align: center; padding: 60px 20px; color: var(--text3);
-}
-.empty-state svg { opacity: .3; margin-bottom: 12px; }
-.empty-state p { font-size: 15px; }
-
-/* ── Loading ── */
-#loading {
-  position: fixed; inset: 0; background: var(--bg);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 999; transition: opacity .3s;
-}
-#loading.hidden { opacity: 0; pointer-events: none; }
-.spinner {
-  width: 44px; height: 44px;
-  border: 3px solid var(--border);
-  border-top-color: var(--blue);
-  border-radius: 50%;
-  animation: spin .8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ── Error ── */
-#error-bar {
-  background: rgba(239,68,68,.15); border: 1px solid rgba(239,68,68,.3);
-  color: var(--red); padding: 12px 24px; font-size: 13px; display: none;
-}
-
-/* ── Scrollbar ── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-/* ── Responsive ── */
-@media (max-width: 640px) {
-  header { padding: 12px 16px; }
-  header h1 span { display: none; }
-  main { padding: 14px 12px; }
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .modal-row { grid-template-columns: 1fr; }
-}
-
-/* ── Splash (seleção de arquivo) ── */
-#splash {
-  position: fixed; inset: 0;
-  background: var(--bg);
-  z-index: 1000;
-  display: flex; align-items: center; justify-content: center;
-}
-#splash.hidden { display: none; }
-.splash-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 40px 36px;
-  width: 90%; max-width: 460px;
-  text-align: center;
-  box-shadow: 0 24px 64px rgba(0,0,0,.5);
-}
-.splash-logo {
-  width: 56px; height: 56px;
-  background: linear-gradient(135deg, var(--blue), var(--purple));
-  border-radius: 14px;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 24px; color: #fff;
-  margin: 0 auto 20px;
-}
-.splash-card h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
-.splash-card p  { color: var(--text2); font-size: 14px; margin-bottom: 28px; line-height: 1.6; }
-.splash-drop {
-  border: 2px dashed var(--border);
-  border-radius: 12px;
-  padding: 28px 20px;
-  margin-bottom: 16px;
-  cursor: pointer;
-  transition: all .2s;
-  color: var(--text3);
-  font-size: 13px;
-}
-.splash-drop:hover, .splash-drop.dragover {
-  border-color: var(--blue);
-  background: rgba(59,130,246,.06);
-  color: var(--blue);
-}
-.splash-drop-icon { font-size: 32px; margin-bottom: 8px; }
-.btn-primary {
-  background: var(--blue); border: none; color: #fff;
-  padding: 12px 28px; border-radius: 8px;
-  font-size: 14px; font-weight: 600; cursor: pointer;
-  width: 100%; transition: background .2s;
-  margin-bottom: 12px;
-}
-.btn-primary:hover { background: #2563eb; }
-.splash-hint { font-size: 12px; color: var(--text3); }
-.splash-hint a { color: var(--blue); cursor: pointer; text-decoration: underline; }
-
-/* ── URL loader ── */
-#url-panel {
-  display: none;
-  margin-top: 16px;
-  text-align: left;
-}
-#url-panel.open { display: block; }
-#url-panel label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; display: block; margin-bottom: 6px; }
-.url-row { display: flex; gap: 8px; }
-#url-input {
-  flex: 1;
-  background: var(--surface2); border: 1px solid var(--border);
-  color: var(--text); padding: 8px 12px; border-radius: 6px;
-  font-size: 13px; outline: none;
-}
-#url-input:focus { border-color: var(--blue); }
-#url-load-btn {
-  background: var(--surface2); border: 1px solid var(--border);
-  color: var(--text2); padding: 8px 14px; border-radius: 6px;
-  cursor: pointer; font-size: 13px; white-space: nowrap; transition: all .2s;
-}
-#url-load-btn:hover { border-color: var(--blue); color: var(--blue); }
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+/* HEADER */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
+.logo{width:34px;height:34px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;flex-shrink:0}
+header h1{font-size:15px;font-weight:700}
+header h1 span{color:var(--text3);font-weight:400;font-size:12px;margin-left:6px}
+.header-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn-primary:hover{background:#2563eb}
+.btn-outline{background:var(--surface);color:var(--text2);border-color:var(--border)}
+.btn-outline:hover{border-color:var(--blue);color:var(--blue)}
+.btn-danger{background:#fee2e2;color:#b91c1c;border-color:#fecaca}
+.btn-danger:hover{background:#fecaca}
+.btn-sm{padding:5px 10px;font-size:11px}
+.ts{font-size:11px;color:var(--text3);background:var(--surface2);padding:3px 9px;border-radius:20px;border:1px solid var(--border)}
+/* MAIN */
+main{padding:18px 24px;max-width:1600px;margin:0 auto}
+/* STAT CARDS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px 15px;position:relative;overflow:hidden;box-shadow:var(--shadow)}
+.stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent)}
+.stat-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px;font-weight:600}
+.stat-value{font-size:24px;font-weight:700;color:var(--accent);line-height:1}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.stat-bar{height:4px;background:var(--border);border-radius:2px;margin-top:7px;overflow:hidden}
+.stat-bar-fill{height:100%;border-radius:2px;background:var(--accent);transition:width .4s}
+/* ALERTS */
+.alerts-section{margin-bottom:14px}
+.section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text2);margin-bottom:9px;display:flex;align-items:center;gap:6px}
+.section-title::before{content:'';width:3px;height:13px;background:var(--red);border-radius:2px}
+.alerts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:10px}
+.alert-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.alert-card-header{padding:9px 13px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--border);font-weight:600;font-size:12px;cursor:pointer;user-select:none}
+.alert-card-header:hover{background:var(--surface2)}
+.alert-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.alert-count{margin-left:auto;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px}
+.ac-red{background:rgba(239,68,68,.1);color:var(--red)}
+.ac-yellow{background:rgba(245,158,11,.1);color:var(--yellow)}
+.ac-blue{background:rgba(59,130,246,.1);color:var(--blue)}
+.alert-chevron{font-size:9px;color:var(--text3);transition:transform .2s}
+.alert-card.collapsed .alert-chevron{transform:rotate(-90deg)}
+.alert-body{max-height:200px;overflow-y:auto}
+.alert-body.hidden{display:none}
+.alert-item{padding:7px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;cursor:pointer;transition:background .1s;font-size:12px}
+.alert-item:hover{background:var(--surface2)}
+.alert-item:last-child{border-bottom:none}
+.alert-item-name{flex:1;font-weight:500;line-height:1.3}
+.alert-item-meta{text-align:right;flex-shrink:0}
+.alert-item-date{display:block;font-size:10px;font-weight:700}
+.dred{color:var(--red)}.dyellow{color:var(--yellow)}.dblue{color:var(--blue)}
+.alert-item-resp{display:block;font-size:10px;color:var(--text3)}
+.alert-empty{padding:14px;text-align:center;color:var(--text3);font-size:12px}
+/* FILTERS */
+.filters{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:11px 15px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:9px;align-items:flex-end;box-shadow:var(--shadow)}
+.filter-group{display:flex;flex-direction:column;gap:3px}
+.filter-group label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.filter-group select,.filter-group input{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 9px;border-radius:6px;font-size:12px;outline:none;min-width:130px}
+.filter-group select:focus,.filter-group input:focus{border-color:var(--blue)}
+.view-toggle{margin-left:auto;display:flex;gap:4px}
+.view-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text2);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500}
+.view-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
+/* KANBAN */
+.kanban{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:13px}
+.kanban-col{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.kanban-col-header{padding:9px 13px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--border);font-weight:600;font-size:12px;background:var(--surface2)}
+.col-dot{width:8px;height:8px;border-radius:50%}
+.col-count{margin-left:auto;background:var(--border);border-radius:20px;padding:2px 8px;font-size:11px;color:var(--text2);font-weight:600}
+.kanban-cards{padding:9px;display:flex;flex-direction:column;gap:7px;max-height:65vh;overflow-y:auto}
+.task-card{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--tc,var(--border));border-radius:8px;padding:10px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
+.task-card:hover{border-color:var(--blue);box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.task-card.is-late{background:#fff5f5;border-color:#fecaca;border-left-color:var(--red)!important}
+.task-card.is-warn{background:#fffbeb;border-color:#fde68a}
+.card-top{display:flex;align-items:flex-start;gap:5px;margin-bottom:6px}
+.card-title{font-size:12px;font-weight:600;flex:1;line-height:1.4}
+.badge{font-size:10px;font-weight:600;padding:2px 6px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.badge-auto{background:rgba(245,158,11,.12);color:#b45309;border:1px solid rgba(245,158,11,.3)}
+.badge-late{background:rgba(239,68,68,.12);color:#b91c1c;border:1px solid rgba(239,68,68,.3)}
+.badge-warn{background:rgba(245,158,11,.12);color:#92400e;border:1px solid rgba(245,158,11,.3)}
+.card-meta{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.tb{font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;color:#fff}
+.rb{font-size:10px;padding:2px 6px;border-radius:20px;background:rgba(99,102,241,.1);color:var(--indigo);border:1px solid rgba(99,102,241,.2)}
+.mc{font-size:11px;color:var(--text3)}
+/* TABLE */
+.tbl-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--surface2);padding:8px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);white-space:nowrap;border-bottom:1px solid var(--border);cursor:pointer;font-weight:700}
+thead th:hover{color:var(--blue)}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer}
+tbody tr:hover{background:var(--surface2)}
+tbody tr.row-late{background:#fff5f5}
+tbody tr.row-late:hover{background:#fee2e2}
+tbody tr.row-warn{background:#fffbeb}
+tbody tr.row-warn:hover{background:#fef3c7}
+tbody td{padding:8px 12px;vertical-align:middle}
+.pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.pg{background:rgba(16,185,129,.1);color:#047857}
+.pb{background:rgba(59,130,246,.1);color:#1d4ed8}
+.pt{background:rgba(100,116,139,.1);color:#475569}
+.pr{background:rgba(239,68,68,.1);color:#b91c1c}
+.py{background:rgba(100,116,139,.08);color:var(--text3)}
+/* VIEW MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;width:90%;max-width:500px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.modal-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.modal-header h2{font-size:15px;font-weight:700;flex:1;line-height:1.4}
+.modal-close{background:var(--surface2);border:1px solid var(--border);color:var(--text3);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.modal-close:hover{background:var(--border);color:var(--text)}
+.modal-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px}
+.mf label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;display:block;font-weight:700}
+.mf p{font-size:13px;font-weight:500}
+.mc2{background:var(--surface2);border-radius:8px;padding:10px;font-size:12px;color:var(--text2);line-height:1.7;margin-top:4px;border:1px solid var(--border)}
+.modal-footer{display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+/* EDIT MODAL */
+.edit-modal{max-width:580px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg.full{grid-column:1/-1}
+.fg label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.fg input,.fg select,.fg textarea{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:13px;outline:none;font-family:inherit;width:100%;transition:border-color .15s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--blue);background:#fff}
+.fg textarea{resize:vertical;min-height:70px;line-height:1.5}
+.fg input[type=date]{color-scheme:light}
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;z-index:500;background:var(--text);color:#fff;padding:10px 16px;border-radius:9px;font-size:13px;font-weight:500;box-shadow:var(--shadow-md);opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.ok{background:#047857}
+.toast.err{background:#b91c1c}
+/* DIVIDER */
+.data-source{font-size:11px;color:var(--text3);margin-top:3px}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--surface2)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text3)}
 </style>
 </head>
 <body>
-
-<!-- Splash: seleção de arquivo -->
-<div id="splash">
-  <div class="splash-card" id="splash-drop-zone">
-    <div class="splash-logo">P</div>
-    <h2>PMO TIGRE</h2>
-    <p>Selecione o arquivo <strong>PMO TIGRE - BKO.xlsx</strong><br>para carregar o dashboard</p>
-
-    <div class="splash-drop" id="drop-area" onclick="document.getElementById('file-input').click()">
-      <div class="splash-drop-icon">📂</div>
-      Arraste o arquivo aqui ou clique para selecionar
-    </div>
-
-    <input type="file" id="file-input" accept=".xlsx,.xls" style="display:none">
-
-    <button class="btn-primary" onclick="document.getElementById('file-input').click()">
-      Abrir arquivo Excel
-    </button>
-
-    <div class="splash-hint">
-      Ou <a onclick="toggleUrlPanel()">carregar de uma URL</a>
-    </div>
-
-    <div id="url-panel">
-      <label>URL do arquivo Excel (GitHub raw, OneDrive, etc.)</label>
-      <div class="url-row">
-        <input type="text" id="url-input" placeholder="https://...">
-        <button id="url-load-btn" onclick="loadFromUrl()">Carregar</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Loading -->
-<div id="loading" class="hidden"><div class="spinner"></div></div>
-
-<!-- Error bar -->
-<div id="error-bar"></div>
-
-<!-- Header -->
 <header>
   <div class="logo">P</div>
-  <h1>PMO TIGRE <span>— BKO</span></h1>
-  <div class="header-right">
-    <span id="last-update"></span>
-    <button id="refresh-btn" onclick="showSplash()">📂 Trocar arquivo</button>
+  <h1>PMO TIGRE <span>&#8212; BKO</span></h1>
+  <div class="header-actions">
+    <span class="ts" id="hts">&#8212;</span>
+    <button class="btn btn-outline btn-sm" onclick="triggerImport()">&#8593; Importar Excel</button>
+    <button class="btn btn-outline btn-sm" onclick="exportExcel()">&#8595; Exportar Excel</button>
+    <button class="btn btn-primary btn-sm" onclick="openNew()">+ Nova Tarefa</button>
   </div>
 </header>
-
 <main>
-  <!-- Stats -->
-  <div class="stats-grid" id="stats-grid"></div>
-
-  <!-- Filters -->
+  <div class="stats-grid" id="sg"></div>
+  <div class="alerts-section">
+    <div class="section-title">Pontos de Aten&#231;&#227;o</div>
+    <div class="alerts-grid" id="alerts-grid"></div>
+  </div>
   <div class="filters">
-    <div class="filter-group">
-      <label>Buscar</label>
-      <input type="text" id="f-search" placeholder="Tarefa ou comentário…">
-    </div>
-    <div class="filter-group">
-      <label>Responsável</label>
-      <select id="f-resp"><option value="">Todos</option></select>
-    </div>
-    <div class="filter-group">
-      <label>Tema</label>
-      <select id="f-tema"><option value="">Todos</option></select>
-    </div>
-    <div class="filter-group">
-      <label>Status</label>
-      <select id="f-status"><option value="">Todos</option></select>
-    </div>
-    <div class="filter-group">
-      <label>Recorrência</label>
-      <select id="f-rec"><option value="">Todas</option></select>
-    </div>
-    <div class="filter-group">
-      <label>Mês</label>
-      <select id="f-mes"><option value="">Todos</option></select>
-    </div>
+    <div class="filter-group"><label>Buscar</label><input type="text" id="fs" placeholder="Tarefa, respons&#225;vel..."></div>
+    <div class="filter-group"><label>Respons&#225;vel</label><select id="fr"><option value="">Todos</option></select></div>
+    <div class="filter-group"><label>Tema</label><select id="ft"><option value="">Todos</option></select></div>
+    <div class="filter-group"><label>Status</label><select id="fst"><option value="">Todos</option></select></div>
+    <div class="filter-group"><label>Recorr&#234;ncia</label><select id="frc"><option value="">Todas</option></select></div>
+    <div class="filter-group"><label>M&#234;s</label><select id="fm"><option value="">Todos</option></select></div>
     <div class="view-toggle">
-      <button class="view-btn active" id="btn-kanban" onclick="setView('kanban')">⊞ Kanban</button>
-      <button class="view-btn" id="btn-table"  onclick="setView('table')">☰ Tabela</button>
+      <button class="view-btn active" id="bk" onclick="sv('kanban')">Kanban</button>
+      <button class="view-btn" id="bt" onclick="sv('table')">Tabela</button>
     </div>
   </div>
-
-  <!-- Kanban -->
-  <div id="view-kanban">
-    <div class="kanban" id="kanban-board"></div>
-  </div>
-
-  <!-- Table -->
-  <div id="view-table">
-    <div class="tbl-wrap">
-      <table id="task-table">
-        <thead>
-          <tr>
-            <th onclick="sortTable('atividade')">Atividade <span class="sort-icon">↕</span></th>
-            <th onclick="sortTable('tema')">Tema <span class="sort-icon">↕</span></th>
-            <th onclick="sortTable('responsavel')">Responsável <span class="sort-icon">↕</span></th>
-            <th onclick="sortTable('status')">Status <span class="sort-icon">↕</span></th>
-            <th onclick="sortTable('status_geral')">Status Geral <span class="sort-icon">↕</span></th>
-            <th onclick="sortTable('recorrencia')">Recorrência <span class="sort-icon">↕</span></th>
-            <th onclick="sortTable('inicio')">Início <span class="sort-icon">↕</span></th>
-            <th onclick="sortTable('termino')">Término <span class="sort-icon">↕</span></th>
-            <th onclick="sortTable('dias')">Dias <span class="sort-icon">↕</span></th>
-          </tr>
-        </thead>
-        <tbody id="table-body"></tbody>
-      </table>
-    </div>
+  <div id="vk"><div class="kanban" id="kb"></div></div>
+  <div id="vt" style="display:none">
+    <div class="tbl-wrap"><table>
+      <thead><tr>
+        <th onclick="st('atividade')">Atividade</th>
+        <th onclick="st('tema')">Tema</th>
+        <th onclick="st('responsavel')">Respons&#225;vel</th>
+        <th onclick="st('status')">Status</th>
+        <th onclick="st('status_geral')">Status Geral</th>
+        <th onclick="st('recorrencia')">Recorr&#234;ncia</th>
+        <th onclick="st('inicio')">In&#237;cio</th>
+        <th onclick="st('termino')">T&#233;rmino</th>
+        <th onclick="st('dias')">Dias</th>
+      </tr></thead>
+      <tbody id="tb2"></tbody>
+    </table></div>
   </div>
 </main>
 
-<!-- Modal -->
-<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
-  <div class="modal" id="modal-box">
-    <div class="modal-header">
-      <h2 id="modal-title"></h2>
-      <button class="modal-close" onclick="closeModal()">×</button>
+<!-- VIEW MODAL -->
+<div class="modal-overlay" id="mo" onclick="cmv(event)">
+  <div class="modal">
+    <div class="modal-header"><h2 id="mt"></h2><button class="modal-close" onclick="cmv()">&#x2715;</button></div>
+    <div id="mb"></div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="openEditFromView()">&#9998; Editar</button>
+      <button class="btn btn-outline" onclick="cmv()">Fechar</button>
     </div>
-    <div id="modal-body"></div>
   </div>
 </div>
 
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="emo" onclick="cme(event)">
+  <div class="modal edit-modal">
+    <div class="modal-header">
+      <h2 id="edit-title">Editar Tarefa</h2>
+      <button class="modal-close" onclick="cme()">&#x2715;</button>
+    </div>
+    <div class="form-grid" id="edit-form">
+      <div class="fg full"><label>Atividade *</label><input id="fe-atividade" placeholder="Nome da atividade"></div>
+      <div class="fg"><label>Tema</label>
+        <select id="fe-tema">
+          <option value="">-- Selecione --</option>
+          <option>ADMINISTRATIVO</option>
+          <option>INFORMA&#199;&#195;O</option>
+          <option>OPERACIONAL</option>
+          <option>TREINAMENTO</option>
+        </select>
+      </div>
+      <div class="fg"><label>Respons&#225;vel</label><input id="fe-responsavel" list="resp-list" placeholder="Nome"><datalist id="resp-list"></datalist></div>
+      <div class="fg"><label>Status</label>
+        <select id="fe-status">
+          <option value="">-- Selecione --</option>
+          <option>N&#195;O INICIADO</option>
+          <option>EM ANDAMENTO</option>
+          <option>FINALIZADO</option>
+          <option>N&#195;O SE APLICA</option>
+        </select>
+      </div>
+      <div class="fg"><label>Status Geral</label>
+        <select id="fe-status_geral">
+          <option value="">-- Selecione --</option>
+          <option>TBD</option>
+          <option>CONCLU&#205;DO</option>
+          <option>EM ANDAMENTO</option>
+          <option>ATRASADO</option>
+          <option>N&#195;O SE APLICA</option>
+        </select>
+      </div>
+      <div class="fg"><label>Recorr&#234;ncia</label>
+        <select id="fe-recorrencia">
+          <option value="">-- Selecione --</option>
+          <option>SEMANAL</option>
+          <option>MENSAL</option>
+          <option>PONTUAL</option>
+          <option>EVENTUAL</option>
+        </select>
+      </div>
+      <div class="fg"><label>M&#234;s Ref.</label>
+        <select id="fe-mes_ref">
+          <option value="">-- Selecione --</option>
+          <option>JANEIRO</option><option>FEVEREIRO</option><option>MAR&#199;O</option>
+          <option>ABRIL</option><option>MAIO</option><option>JUNHO</option>
+          <option>JULHO</option><option>AGOSTO</option><option>SETEMBRO</option>
+          <option>OUTUBRO</option><option>NOVEMBRO</option><option>DEZEMBRO</option>
+        </select>
+      </div>
+      <div class="fg"><label>In&#237;cio</label><input type="date" id="fe-inicio"></div>
+      <div class="fg"><label>T&#233;rmino</label><input type="date" id="fe-termino"></div>
+      <div class="fg"><label>Conclus&#227;o</label><input type="date" id="fe-conclusao"></div>
+      <div class="fg full"><label>Coment&#225;rios</label><textarea id="fe-comentarios" placeholder="Observa&#231;&#245;es..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="saveTask()">&#10003; Salvar</button>
+      <button class="btn btn-outline" onclick="cme()">Cancelar</button>
+      <button class="btn btn-danger" id="btn-delete" style="margin-left:auto;display:none" onclick="deleteTask()">&#128465; Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import file input -->
+<input type="file" id="import-input" accept=".xlsx,.xls" style="display:none" onchange="importExcel(this)">
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script>
-// ── State ────────────────────────────────────────────────────────────────────
-let ALL_TASKS = [];
-let sortCol = 'inicio', sortAsc = true;
-let currentView = 'kanban';
+var D=[{"id": 1, "tema": "ADMINISTRATIVO", "atividade": "Executiva", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "N\u00c3O SE APLICA", "inicio": null, "termino": null, "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "Atualiza\u00e7\u00e3o Executiva", "gerada": false}, {"id": 2, "tema": "ADMINISTRATIVO", "atividade": "Follow Up de Vagas", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "FINALIZADO", "inicio": "2026-03-05", "termino": "2026-03-05", "conclusao": "2026-03-05", "dias": null, "status_geral": "CONCLU\u00cdDO", "prioridade": "2", "comentarios": "Resumo de Vagas - Ativas, Abertas, f\u00e9rias, desligados", "gerada": false}, {"id": 3, "tema": "ADMINISTRATIVO", "atividade": "Hospedagens", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "FINALIZADO", "inicio": "2026-03-04", "termino": "2026-03-06", "conclusao": "2026-03-06", "dias": null, "status_geral": "CONCLU\u00cdDO", "prioridade": "2", "comentarios": "Solicita\u00e7\u00e3o de Hospedagens", "gerada": false}, {"id": 4, "tema": "ADMINISTRATIVO", "atividade": "Reembolso de KM", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "MENSAL", "status": "FINALIZADO", "inicio": "2026-03-01", "termino": "2026-03-09", "conclusao": "2026-03-09", "dias": null, "status_geral": "CONCLU\u00cdDO", "prioridade": "2", "comentarios": "Calculo e Lan\u00e7amento de Reembolso de KM - Veiculos proprios", "gerada": false}, {"id": 5, "tema": "ADMINISTRATIVO", "atividade": "Taxa de coligada", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "MENSAL", "status": "FINALIZADO", "inicio": "2026-03-05", "termino": "2026-03-10", "conclusao": "2026-03-09", "dias": null, "status_geral": "CONCLU\u00cdDO", "prioridade": "2", "comentarios": "Lan\u00e7amento de Taxa de Coligada", "gerada": false}, {"id": 6, "tema": "ADMINISTRATIVO", "atividade": "F\u00e9rias", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "MENSAL", "status": "FINALIZADO", "inicio": "2026-03-10", "termino": "2026-03-10", "conclusao": null, "dias": -21.0, "status_geral": "CONCLU\u00cdDO COM ATRASO", "prioridade": "", "comentarios": "Valida\u00e7\u00e3o e Programa\u00e7\u00e3o", "gerada": false}, {"id": 7, "tema": "ADMINISTRATIVO", "atividade": "Afastamento", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "MENSAL", "status": "FINALIZADO", "inicio": "2026-03-10", "termino": "2026-03-10", "conclusao": "2026-02-25", "dias": null, "status_geral": "CONCLU\u00cdDO", "prioridade": "2", "comentarios": "Afastamento de Day off e Feriados Regionais", "gerada": false}, {"id": 8, "tema": "ADMINISTRATIVO", "atividade": "Hospedagens", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "FINALIZADO", "inicio": "2026-03-11", "termino": "2026-03-12", "conclusao": "2026-03-16", "dias": -19.0, "status_geral": "CONCLU\u00cdDO COM ATRASO", "prioridade": "", "comentarios": "Solicita\u00e7\u00e3o de Hospedagens", "gerada": false}, {"id": 9, "tema": "ADMINISTRATIVO", "atividade": "Executiva", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "N\u00c3O SE APLICA", "inicio": null, "termino": null, "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "Atualiza\u00e7\u00e3o Executiva", "gerada": false}, {"id": 10, "tema": "ADMINISTRATIVO", "atividade": "Follow Up de Vagas", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "FINALIZADO", "inicio": "2026-03-12", "termino": "2026-03-12", "conclusao": "2026-03-12", "dias": null, "status_geral": "CONCLU\u00cdDO", "prioridade": "2", "comentarios": "Resumo de Vagas - Ativas, Abertas, f\u00e9rias, desligados", "gerada": false}, {"id": 11, "tema": "ADMINISTRATIVO", "atividade": "Hospedagens", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-18", "termino": "2026-03-19", "conclusao": null, "dias": -12.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Solicita\u00e7\u00e3o de Hospedagens", "gerada": false}, {"id": 12, "tema": "ADMINISTRATIVO", "atividade": "Executiva", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-19", "termino": "2026-03-19", "conclusao": null, "dias": -12.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Atualiza\u00e7\u00e3o Executiva", "gerada": false}, {"id": 13, "tema": "ADMINISTRATIVO", "atividade": "Follow Up de Vagas", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-19", "termino": "2026-03-19", "conclusao": null, "dias": -12.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Resumo de Vagas - Ativas, Abertas, f\u00e9rias, desligados", "gerada": false}, {"id": 14, "tema": "ADMINISTRATIVO", "atividade": "Pesquisa de Clima", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMESTRAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-02", "termino": "2026-03-20", "conclusao": null, "dias": -11.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Fechamento e resumo da Pesquisa de Clima", "gerada": false}, {"id": 15, "tema": "ADMINISTRATIVO", "atividade": "Variavel Supervisores", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "MENSAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-10", "termino": "2026-03-20", "conclusao": null, "dias": -11.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Pagamento Variavel Supervisores", "gerada": false}, {"id": 16, "tema": "ADMINISTRATIVO", "atividade": "Executiva", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-23", "termino": "2026-03-23", "conclusao": null, "dias": -8.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Atualiza\u00e7\u00e3o Executiva", "gerada": false}, {"id": 17, "tema": "ADMINISTRATIVO", "atividade": "Follow Up de Vagas", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-23", "termino": "2026-03-23", "conclusao": null, "dias": -8.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Resumo de Vagas - Ativas, Abertas, f\u00e9rias, desligados", "gerada": false}, {"id": 18, "tema": "ADMINISTRATIVO", "atividade": "Valida\u00e7\u00e3o de Temporario para CLT", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "MENSAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-20", "termino": "2026-03-25", "conclusao": null, "dias": -6.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Valida\u00e7\u00e3o se colaboradores TMP ser\u00e3o Efetivdos", "gerada": false}, {"id": 19, "tema": "ADMINISTRATIVO", "atividade": "Hospedagens", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-25", "termino": "2026-03-26", "conclusao": null, "dias": -5.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Solicita\u00e7\u00e3o de Hospedagens", "gerada": false}, {"id": 20, "tema": "ADMINISTRATIVO", "atividade": "Lan\u00e7amento de AJC", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "MENSAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-24", "termino": "2026-03-27", "conclusao": null, "dias": -4.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Lan\u00e7amento de AJC e KM inicial", "gerada": false}, {"id": 21, "tema": "INFORMA\u00c7\u00c3O", "atividade": "Mapeamento de Carreira", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "SEMESTRAL", "status": "FINALIZADO", "inicio": "2026-02-20", "termino": "2026-03-06", "conclusao": "2026-03-09", "dias": -25.0, "status_geral": "CONCLU\u00cdDO COM ATRASO", "prioridade": "", "comentarios": "Fechamento e resumo do Mapeamento de Carreira", "gerada": false}, {"id": 22, "tema": "INFORMA\u00c7\u00c3O", "atividade": "Importa\u00e7\u00e3o de Roteiro", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "SEMANAL", "status": "FINALIZADO", "inicio": "2026-03-06", "termino": "2026-03-06", "conclusao": "2026-03-06", "dias": null, "status_geral": "CONCLU\u00cdDO", "prioridade": "2", "comentarios": "Import Roteiro", "gerada": false}, {"id": 23, "tema": "INFORMA\u00c7\u00c3O", "atividade": "Relatorio de Ponto Extra", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "SEMANAL", "status": "FINALIZADO", "inicio": "2026-03-06", "termino": "2026-03-06", "conclusao": "2026-03-06", "dias": null, "status_geral": "CONCLU\u00cdDO", "prioridade": "2", "comentarios": "Atualiza\u00e7\u00e3o Relatorio de Ponto Extra - Com analises", "gerada": false}, {"id": 24, "tema": "INFORMA\u00c7\u00c3O", "atividade": "Custo de Servir", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "MENSAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-10", "termino": "2026-03-10", "conclusao": null, "dias": -21.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Envio Custo de Servir", "gerada": false}, {"id": 25, "tema": "INFORMA\u00c7\u00c3O", "atividade": "Importa\u00e7\u00e3o de Roteiro", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-13", "termino": "2026-03-13", "conclusao": null, "dias": -18.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Import Roteiro", "gerada": false}, {"id": 26, "tema": "INFORMA\u00c7\u00c3O", "atividade": "Relatorio de Ponto Extra", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-13", "termino": "2026-03-13", "conclusao": null, "dias": -18.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Atualiza\u00e7\u00e3o Relatorio de Ponto Extra - Com analises", "gerada": false}, {"id": 27, "tema": "INFORMA\u00c7\u00c3O", "atividade": "KPI Supervisores", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "MENSAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-10", "termino": "2026-03-15", "conclusao": null, "dias": -16.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "", "gerada": false}, {"id": 28, "tema": "INFORMA\u00c7\u00c3O", "atividade": "Importa\u00e7\u00e3o de Roteiro", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-20", "termino": "2026-03-20", "conclusao": null, "dias": -11.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Import Roteiro", "gerada": false}, {"id": 29, "tema": "INFORMA\u00c7\u00c3O", "atividade": "Revis\u00e3o e Atualiza\u00e7\u00e3o de Dash", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "MENSAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-20", "termino": "2026-03-20", "conclusao": null, "dias": -11.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Revis\u00e3o e Atualiza\u00e7\u00e3o de Dashs", "gerada": false}, {"id": 30, "tema": "INFORMA\u00c7\u00c3O", "atividade": "Relatorio de Ponto Extra", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-20", "termino": "2026-03-20", "conclusao": null, "dias": -11.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Atualiza\u00e7\u00e3o Relatorio de Ponto Extra - Com analises", "gerada": false}, {"id": 31, "tema": "INFORMA\u00c7\u00c3O", "atividade": "Desenvolvimento Dash - One Page", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "PONTUAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-04", "termino": "2026-03-25", "conclusao": null, "dias": -6.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Desenvolvimento Dashboard One Page", "gerada": false}, {"id": 32, "tema": "INFORMA\u00c7\u00c3O", "atividade": "Importa\u00e7\u00e3o de Roteiro", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-27", "termino": "2026-03-27", "conclusao": null, "dias": -4.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Import Roteiro", "gerada": false}, {"id": 33, "tema": "INFORMA\u00c7\u00c3O", "atividade": "Relatorio de Ponto Extra", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-27", "termino": "2026-03-27", "conclusao": null, "dias": -4.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Atualiza\u00e7\u00e3o Relatorio de Ponto Extra - Com analises", "gerada": false}, {"id": 34, "tema": "OPERACIONAL", "atividade": "Fechamento PDV Score", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "MENSAL", "status": "EM ANDAMENTO", "inicio": "2026-03-01", "termino": "2026-03-07", "conclusao": null, "dias": -24.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Limpeza da base, removendo as ocorrencias", "gerada": false}, {"id": 35, "tema": "OPERACIONAL", "atividade": "Feedback Supervisores", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "MENSAL", "status": "EM ANDAMENTO", "inicio": "2026-03-01", "termino": "2026-03-07", "conclusao": null, "dias": -24.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Feedback dos supervisores - Primeira semana do m\u00eas", "gerada": false}, {"id": 36, "tema": "OPERACIONAL", "atividade": "Roteiro Valida\u00e7\u00e3o Supervisores", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "SEMANAL", "status": "EM ANDAMENTO", "inicio": "2026-03-02", "termino": "2026-03-06", "conclusao": null, "dias": -25.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Roteiro para valida\u00e7\u00e3o dos supervisores segunda / conclus\u00e3o Sexta-feira", "gerada": false}, {"id": 37, "tema": "OPERACIONAL", "atividade": "Pauta Semanal", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-05", "termino": "2026-03-06", "conclusao": null, "dias": -25.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Atualiza\u00e7\u00e3o de Paula para Status Semanal", "gerada": false}, {"id": 38, "tema": "OPERACIONAL", "atividade": "Roteiro Valida\u00e7\u00e3o Supervisores", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-09", "termino": "2026-03-13", "conclusao": null, "dias": -18.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Roteiro para valida\u00e7\u00e3o dos supervisores segunda / conclus\u00e3o Sexta-feira", "gerada": false}, {"id": 39, "tema": "OPERACIONAL", "atividade": "Pauta Semanal", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-12", "termino": "2026-03-13", "conclusao": null, "dias": -18.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Atualiza\u00e7\u00e3o de Paula para Status Semanal", "gerada": false}, {"id": 40, "tema": "OPERACIONAL", "atividade": "Roteiro Valida\u00e7\u00e3o Supervisores", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-16", "termino": "2026-03-20", "conclusao": null, "dias": -11.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Roteiro para valida\u00e7\u00e3o dos supervisores segunda / conclus\u00e3o Sexta-feira", "gerada": false}, {"id": 41, "tema": "OPERACIONAL", "atividade": "Atualiza\u00e7\u00e3o Utensilios", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "MENSAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-16", "termino": "2026-03-23", "conclusao": null, "dias": -8.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Atualiza\u00e7\u00e3o de Utensilios do m\u00eas", "gerada": false}, {"id": 42, "tema": "OPERACIONAL", "atividade": "KPI Supervisores", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "MENSAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-16", "termino": "2026-03-17", "conclusao": null, "dias": -14.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Atualiza\u00e7\u00e3o de KPI Supervisores", "gerada": false}, {"id": 43, "tema": "OPERACIONAL", "atividade": "Pauta Semanal", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-19", "termino": "2026-03-20", "conclusao": null, "dias": -11.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Atualiza\u00e7\u00e3o de Paula para Status Semanal", "gerada": false}, {"id": 44, "tema": "OPERACIONAL", "atividade": "Base PDV Socore - Ocorrencias", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "MENSAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-20", "termino": "2026-03-27", "conclusao": null, "dias": -4.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Valida\u00e7\u00e3o de ocorrencias do PDV Score", "gerada": false}, {"id": 45, "tema": "OPERACIONAL", "atividade": "Solicita\u00e7\u00e3o de MPDV", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "MENSAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-20", "termino": "2026-03-27", "conclusao": null, "dias": -4.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Solicita\u00e7\u00e3o de MPDV mensal para Equipe", "gerada": false}, {"id": 46, "tema": "OPERACIONAL", "atividade": "Roteiro Valida\u00e7\u00e3o Supervisores", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-23", "termino": "2026-03-27", "conclusao": null, "dias": -4.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Roteiro para valida\u00e7\u00e3o dos supervisores segunda / conclus\u00e3o Sexta-feira", "gerada": false}, {"id": 47, "tema": "OPERACIONAL", "atividade": "Pauta Semanal", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-26", "termino": "2026-03-27", "conclusao": null, "dias": -4.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Atualiza\u00e7\u00e3o de Paula para Status Semanal", "gerada": false}, {"id": 48, "tema": "TREINAMENTO", "atividade": "Card Semanal", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "SEMANAL", "status": "FINALIZADO", "inicio": "2026-03-05", "termino": "2026-03-05", "conclusao": "2026-03-06", "dias": -26.0, "status_geral": "CONCLU\u00cdDO COM ATRASO", "prioridade": "", "comentarios": "Card Papel forra\u00e7\u00e3o", "gerada": false}, {"id": 49, "tema": "TREINAMENTO", "atividade": "PDV News", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "MENSAL", "status": "FINALIZADO", "inicio": "2026-03-02", "termino": "2026-03-06", "conclusao": "2026-03-09", "dias": -25.0, "status_geral": "CONCLU\u00cdDO COM ATRASO", "prioridade": "", "comentarios": "Envio do PDV News", "gerada": false}, {"id": 50, "tema": "TREINAMENTO", "atividade": "Reserva de Salas", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "MENSAL", "status": "FINALIZADO", "inicio": "2026-03-09", "termino": "2026-03-09", "conclusao": "2026-03-09", "dias": null, "status_geral": "CONCLU\u00cdDO", "prioridade": "2", "comentarios": "Reserva de sala coligada/filial", "gerada": false}, {"id": 51, "tema": "TREINAMENTO", "atividade": "Treinamento Supervisores", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "MENSAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-10", "termino": "2026-03-10", "conclusao": null, "dias": -21.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Tema: Processo seletivo de Qualidade", "gerada": false}, {"id": 52, "tema": "TREINAMENTO", "atividade": "Card Semanal", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-12", "termino": "2026-03-12", "conclusao": "2026-03-12", "dias": -19.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Refor\u00e7o da Carteirinha do Sesc", "gerada": false}, {"id": 53, "tema": "TREINAMENTO", "atividade": "Desenvolvimento treinamento mensal - Promotores", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "MENSAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-01", "termino": "2026-03-15", "conclusao": null, "dias": -16.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Mix e MPDV ideal de Cada loja / FPP", "gerada": false}, {"id": 54, "tema": "TREINAMENTO", "atividade": "Resumo Mensal do Treinamento - Save The Date", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "MENSAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-16", "termino": "2026-03-16", "conclusao": "2026-03-16", "dias": -15.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Resumo do treinamento que ser\u00e1 aplicado", "gerada": false}, {"id": 55, "tema": "TREINAMENTO", "atividade": "Card Semanal", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-19", "termino": "2026-03-19", "conclusao": null, "dias": -12.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "A definir", "gerada": false}, {"id": 56, "tema": "TREINAMENTO", "atividade": "Aplica\u00e7\u00e3o de Treinamento - Promotores", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "MENSAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-19", "termino": "2026-03-26", "conclusao": null, "dias": -5.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Treinamento Salvador 19/03 M - Nordeste Jorge 25/03 M - Centro Leste 25/03 T - SPC 26/03 M - TM 26/03 T", "gerada": false}, {"id": 57, "tema": "TREINAMENTO", "atividade": "Card Semanal", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "SEMANAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-26", "termino": "2026-03-26", "conclusao": null, "dias": -5.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "A definir", "gerada": false}, {"id": 58, "tema": "TREINAMENTO", "atividade": "Feedback Treinamento", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "MENSAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-27", "termino": "2026-03-27", "conclusao": null, "dias": -4.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Feedback Treinamento Aplicado", "gerada": false}, {"id": 59, "tema": "TREINAMENTO", "atividade": "Cria\u00e7\u00e3o do Curso - Tallent", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "MENSAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-27", "termino": "2026-03-27", "conclusao": null, "dias": -4.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Resumo do Treinamento respondendo as duvidas da equipe", "gerada": false}, {"id": 60, "tema": "INFORMA\u00c7\u00c3O", "atividade": "Importa\u00e7\u00e3o e Vinculo PDV Score", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "MENSAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-30", "termino": "2026-03-30", "conclusao": null, "dias": -1.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Atualiza\u00e7\u00e3o e Vinculo do PDV Score", "gerada": false}, {"id": 61, "tema": "ADMINISTRATIVO", "atividade": "Hodometro", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "MENSAL", "status": "N\u00c3O INCIADO", "inicio": "2026-03-02", "termino": "2026-03-03", "conclusao": null, "dias": -28.0, "status_geral": "ATRASADO", "prioridade": "", "comentarios": "Acompanhamento de Hodometro", "gerada": false}, {"id": "g2", "tema": "ADMINISTRATIVO", "atividade": "Follow Up de Vagas", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-02", "termino": "2026-04-03", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "2", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g3", "tema": "ADMINISTRATIVO", "atividade": "Hospedagens", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-08", "termino": "2026-04-10", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "2", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g4", "tema": "ADMINISTRATIVO", "atividade": "Reembolso de KM", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-01", "termino": "2026-04-09", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "2", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g5", "tema": "ADMINISTRATIVO", "atividade": "Taxa de coligada", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-05", "termino": "2026-04-10", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "2", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g6", "tema": "ADMINISTRATIVO", "atividade": "F\u00e9rias", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-10", "termino": "2026-04-10", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g7", "tema": "ADMINISTRATIVO", "atividade": "Afastamento", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-10", "termino": "2026-04-10", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "2", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g8", "tema": "ADMINISTRATIVO", "atividade": "Hospedagens", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-08", "termino": "2026-04-09", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g10", "tema": "ADMINISTRATIVO", "atividade": "Follow Up de Vagas", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-02", "termino": "2026-04-03", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "2", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g11", "tema": "ADMINISTRATIVO", "atividade": "Hospedagens", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-08", "termino": "2026-04-09", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g12", "tema": "ADMINISTRATIVO", "atividade": "Executiva", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-02", "termino": "2026-04-03", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g13", "tema": "ADMINISTRATIVO", "atividade": "Follow Up de Vagas", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-02", "termino": "2026-04-03", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g14", "tema": "ADMINISTRATIVO", "atividade": "Pesquisa de Clima", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMESTRAL", "status": "N\u00c3O INICIADO", "inicio": "2026-09-02", "termino": "2026-09-20", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMESTRAL]", "gerada": true}, {"id": "g15", "tema": "ADMINISTRATIVO", "atividade": "Variavel Supervisores", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-10", "termino": "2026-04-20", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g16", "tema": "ADMINISTRATIVO", "atividade": "Executiva", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-06", "termino": "2026-04-07", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g17", "tema": "ADMINISTRATIVO", "atividade": "Follow Up de Vagas", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-06", "termino": "2026-04-07", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g18", "tema": "ADMINISTRATIVO", "atividade": "Valida\u00e7\u00e3o de Temporario para CLT", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-20", "termino": "2026-04-25", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g19", "tema": "ADMINISTRATIVO", "atividade": "Hospedagens", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-08", "termino": "2026-04-09", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g20", "tema": "ADMINISTRATIVO", "atividade": "Lan\u00e7amento de AJC", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-24", "termino": "2026-04-27", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g21", "tema": "INFORMA\u00c7\u00c3O", "atividade": "Mapeamento de Carreira", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "SEMESTRAL", "status": "N\u00c3O INICIADO", "inicio": "2026-08-20", "termino": "2026-09-06", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMESTRAL]", "gerada": true}, {"id": "g22", "tema": "INFORMA\u00c7\u00c3O", "atividade": "Importa\u00e7\u00e3o de Roteiro", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-03", "termino": "2026-04-04", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "2", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g23", "tema": "INFORMA\u00c7\u00c3O", "atividade": "Relatorio de Ponto Extra", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-03", "termino": "2026-04-04", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "2", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g24", "tema": "INFORMA\u00c7\u00c3O", "atividade": "Custo de Servir", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-10", "termino": "2026-04-10", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g25", "tema": "INFORMA\u00c7\u00c3O", "atividade": "Importa\u00e7\u00e3o de Roteiro", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-03", "termino": "2026-04-04", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g26", "tema": "INFORMA\u00c7\u00c3O", "atividade": "Relatorio de Ponto Extra", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-03", "termino": "2026-04-04", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g27", "tema": "INFORMA\u00c7\u00c3O", "atividade": "KPI Supervisores", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-10", "termino": "2026-04-15", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g28", "tema": "INFORMA\u00c7\u00c3O", "atividade": "Importa\u00e7\u00e3o de Roteiro", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-03", "termino": "2026-04-04", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g29", "tema": "INFORMA\u00c7\u00c3O", "atividade": "Revis\u00e3o e Atualiza\u00e7\u00e3o de Dash", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-20", "termino": "2026-04-20", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g30", "tema": "INFORMA\u00c7\u00c3O", "atividade": "Relatorio de Ponto Extra", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-03", "termino": "2026-04-04", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g32", "tema": "INFORMA\u00c7\u00c3O", "atividade": "Importa\u00e7\u00e3o de Roteiro", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-03", "termino": "2026-04-04", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g33", "tema": "INFORMA\u00c7\u00c3O", "atividade": "Relatorio de Ponto Extra", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-03", "termino": "2026-04-04", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g34", "tema": "OPERACIONAL", "atividade": "Fechamento PDV Score", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-01", "termino": "2026-04-07", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g35", "tema": "OPERACIONAL", "atividade": "Feedback Supervisores", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-01", "termino": "2026-04-07", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g36", "tema": "OPERACIONAL", "atividade": "Roteiro Valida\u00e7\u00e3o Supervisores", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-06", "termino": "2026-04-10", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g37", "tema": "OPERACIONAL", "atividade": "Pauta Semanal", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-02", "termino": "2026-04-03", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g38", "tema": "OPERACIONAL", "atividade": "Roteiro Valida\u00e7\u00e3o Supervisores", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-06", "termino": "2026-04-10", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g39", "tema": "OPERACIONAL", "atividade": "Pauta Semanal", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-02", "termino": "2026-04-03", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g40", "tema": "OPERACIONAL", "atividade": "Roteiro Valida\u00e7\u00e3o Supervisores", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-06", "termino": "2026-04-10", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g41", "tema": "OPERACIONAL", "atividade": "Atualiza\u00e7\u00e3o Utensilios", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-16", "termino": "2026-04-23", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g42", "tema": "OPERACIONAL", "atividade": "KPI Supervisores", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-16", "termino": "2026-04-17", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g43", "tema": "OPERACIONAL", "atividade": "Pauta Semanal", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-02", "termino": "2026-04-03", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g44", "tema": "OPERACIONAL", "atividade": "Base PDV Socore - Ocorrencias", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-20", "termino": "2026-04-27", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g45", "tema": "OPERACIONAL", "atividade": "Solicita\u00e7\u00e3o de MPDV", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-20", "termino": "2026-04-27", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g46", "tema": "OPERACIONAL", "atividade": "Roteiro Valida\u00e7\u00e3o Supervisores", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-06", "termino": "2026-04-10", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g47", "tema": "OPERACIONAL", "atividade": "Pauta Semanal", "mes_ref": "MAR\u00c7O", "responsavel": "EDNO", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-02", "termino": "2026-04-03", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g48", "tema": "TREINAMENTO", "atividade": "Card Semanal", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-02", "termino": "2026-04-03", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g49", "tema": "TREINAMENTO", "atividade": "PDV News", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-02", "termino": "2026-04-06", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g50", "tema": "TREINAMENTO", "atividade": "Reserva de Salas", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-09", "termino": "2026-04-09", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "2", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g51", "tema": "TREINAMENTO", "atividade": "Treinamento Supervisores", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-10", "termino": "2026-04-10", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g52", "tema": "TREINAMENTO", "atividade": "Card Semanal", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-02", "termino": "2026-04-03", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g53", "tema": "TREINAMENTO", "atividade": "Desenvolvimento treinamento mensal - Promotores", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-01", "termino": "2026-04-15", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g54", "tema": "TREINAMENTO", "atividade": "Resumo Mensal do Treinamento - Save The Date", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-16", "termino": "2026-04-16", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g55", "tema": "TREINAMENTO", "atividade": "Card Semanal", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-02", "termino": "2026-04-03", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g56", "tema": "TREINAMENTO", "atividade": "Aplica\u00e7\u00e3o de Treinamento - Promotores", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-19", "termino": "2026-04-26", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g57", "tema": "TREINAMENTO", "atividade": "Card Semanal", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "SEMANAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-02", "termino": "2026-04-03", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia SEMANAL]", "gerada": true}, {"id": "g58", "tema": "TREINAMENTO", "atividade": "Feedback Treinamento", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-27", "termino": "2026-04-27", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g59", "tema": "TREINAMENTO", "atividade": "Cria\u00e7\u00e3o do Curso - Tallent", "mes_ref": "MAR\u00c7O", "responsavel": "EDFLANKLIN", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-27", "termino": "2026-04-27", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g60", "tema": "INFORMA\u00c7\u00c3O", "atividade": "Importa\u00e7\u00e3o e Vinculo PDV Score", "mes_ref": "MAR\u00c7O", "responsavel": "VINICIUS", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-30", "termino": "2026-04-30", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}, {"id": "g61", "tema": "ADMINISTRATIVO", "atividade": "Hodometro", "mes_ref": "MAR\u00c7O", "responsavel": "DIOGO", "recorrencia": "MENSAL", "status": "N\u00c3O INICIADO", "inicio": "2026-04-02", "termino": "2026-04-03", "conclusao": null, "dias": null, "status_geral": "TBD", "prioridade": "", "comentarios": "[Gerado automaticamente \u2014 recorr\u00eancia MENSAL]", "gerada": true}];
 
-// ── Colors ───────────────────────────────────────────────────────────────────
-const TEMA_COLORS = {
-  'ADMINISTRATIVO': '#8b5cf6',
-  'TREINAMENTO':    '#14b8a6',
-  'OPERACIONAL':    '#f97316',
-  'INFORMAÇÃO':     '#06b6d4',
-  'PMO - GERAL':    '#6366f1',
-  'PMO-GERAL':      '#6366f1',
-  'DEFAULT':        '#3b82f6',
-};
-function temaColor(t) {
-  const key = Object.keys(TEMA_COLORS).find(k => (t||'').toUpperCase().includes(k));
-  return TEMA_COLORS[key] || TEMA_COLORS.DEFAULT;
+var STORAGE_KEY = 'pmo-tigre-data-v2';
+var BASE_D = D.slice();
+var _editId = null;
+var _viewTask = null;
+var sc = 'termino', sa = true, cv = 'kanban';
+
+// ── DATA PERSISTENCE ─────────────────────────────────────────────────────────
+function loadData() {
+  try {
+    var s = localStorage.getItem(STORAGE_KEY);
+    if (s) { D = JSON.parse(s); return; }
+  } catch(e) {}
+}
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(D));
+  updateTimestamp();
+}
+function updateTimestamp() {
+  var el = document.getElementById('hts');
+  if (el) el.textContent = 'Salvo ' + new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+}
+function nextId() {
+  return D.reduce(function(m,t){ return Math.max(m, t.id||0); }, 0) + 1;
 }
 
-const STATUS_KANBAN = [
-  { key: 'NÃO INICIADO',  label: 'Não Iniciado',  color: '#475569' },
-  { key: 'EM ANDAMENTO',  label: 'Em Andamento',  color: '#3b82f6' },
-  { key: 'FINALIZADO',    label: 'Finalizado',    color: '#10b981' },
-  { key: 'ATRASADO',      label: 'Atrasado',      color: '#ef4444' },
-  { key: 'NÃO SE APLICA', label: 'Não se Aplica', color: '#334155' },
-];
-
-function statusPill(s) {
-  const v = (s||'').toUpperCase();
-  if (v.includes('CONCLUÍDO') && !v.includes('ATRASO')) return `<span class="pill pill-green">${s}</span>`;
-  if (v.includes('ATRASO') || v === 'ATRASADO') return `<span class="pill pill-red">${s}</span>`;
-  if (v === 'EM ANDAMENTO' || v === 'FINALIZADO') return `<span class="pill pill-blue">${s}</span>`;
-  if (v === 'TBD' || v === 'NÃO INICIADO') return `<span class="pill pill-tbd">${s||'—'}</span>`;
-  if (v === 'NÃO SE APLICA') return `<span class="pill pill-gray">${s}</span>`;
-  return `<span class="pill pill-gray">${s||'—'}</span>`;
-}
-
-function fmtDate(d) {
-  if (!d) return '—';
-  const [y,m,dy] = d.split('-');
-  return `${dy}/${m}/${y}`;
-}
-
-function diasColor(v) {
-  if (v == null) return 'var(--text3)';
-  if (v > 0)  return 'var(--green)';
-  if (v < -5) return 'var(--red)';
-  return 'var(--yellow)';
-}
-
-// ── Excel date helpers ────────────────────────────────────────────────────────
-function parseExcelDate(val) {
-  if (!val) return null;
-  if (val instanceof Date) {
-    if (isNaN(val)) return null;
-    // Use UTC to avoid timezone shift
-    const y = val.getUTCFullYear();
-    const m = String(val.getUTCMonth() + 1).padStart(2, '0');
-    const d = String(val.getUTCDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  }
-  if (typeof val === 'number' && val > 0) {
-    // Excel serial date
-    const d = new Date(Math.round((val - 25569) * 86400 * 1000));
-    const y = d.getUTCFullYear();
-    const mo = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const dy = String(d.getUTCDate()).padStart(2, '0');
-    return `${y}-${mo}-${dy}`;
-  }
-  if (typeof val === 'string') {
-    // Try ISO or dd/mm/yyyy formats
-    const iso = val.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
-    const br = val.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
-    if (br) return `${br[3]}-${br[2]}-${br[1]}`;
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function tc(t){if(!t)return'#3b82f6';var u=t.toUpperCase();if(u.indexOf('ADMIN')>=0)return'#8b5cf6';if(u.indexOf('TREIN')>=0)return'#14b8a6';if(u.indexOf('OPER')>=0)return'#f97316';if(u.indexOf('INFO')>=0)return'#06b6d4';return'#3b82f6';}
+var SC=[{k:'NAO_INICIADO',l:'N\u00e3o Iniciado',c:'#94a3b8'},{k:'EM ANDAMENTO',l:'Em Andamento',c:'#3b82f6'},{k:'FINALIZADO',l:'Finalizado',c:'#10b981'},{k:'NAO_APLICA',l:'N\u00e3o se Aplica',c:'#cbd5e1'}];
+function ns(s){if(!s)return'';var u=s.toUpperCase().trim().replace(/[\u00C0-\u00C5\u00E0-\u00E5]/g,'A').replace(/[\u00C7\u00E7]/g,'C').replace(/[\u00C8-\u00CB\u00E8-\u00EB]/g,'E').replace(/[\u00CC-\u00CF\u00EC-\u00EF]/g,'I').replace(/[\u00D2-\u00D6\u00F2-\u00F6]/g,'O').replace(/[\u00D9-\u00DC\u00F9-\u00FC]/g,'U');if(u==='NAO INCIADO'||u==='NAO INICIADO')return'NAO_INICIADO';if(u==='NAO SE APLICA')return'NAO_APLICA';return u;}
+function sp(s){var n=ns(s);if(n==='FINALIZADO')return'<span class="pill pg">'+(s||'-')+'</span>';if(n==='EM ANDAMENTO')return'<span class="pill pb">'+(s||'-')+'</span>';if(n==='NAO_INICIADO')return'<span class="pill pt">'+(s||'-')+'</span>';if(n==='NAO_APLICA')return'<span class="pill py">'+(s||'-')+'</span>';if((s||'').indexOf('ATRASO')>=0)return'<span class="pill pr">'+s+'</span>';if((s||'').indexOf('CONC')>=0)return'<span class="pill pg">'+s+'</span>';if(s==='TBD')return'<span class="pill pt">TBD</span>';return'<span class="pill py">'+(s||'-')+'</span>';}
+function fd(d){if(!d)return'-';var p=d.split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d;}
+function dc(v){if(v==null)return'var(--text3)';if(v>0)return'var(--green)';if(v<-5)return'var(--red)';return'var(--yellow)';}
+function today(){return new Date().toISOString().substring(0,10);}
+function addDays(base,n){var dt=new Date(base+'T00:00:00');dt.setDate(dt.getDate()+n);return dt.toISOString().substring(0,10);}
+function il(t){if(!t.termino)return false;var n=ns(t.status);return t.termino<today()&&n!=='FINALIZADO'&&n!=='NAO_APLICA';}
+function iw(t){if(!t.termino)return false;var n=ns(t.status);var td=today();return t.termino>=td&&t.termino<=addDays(td,7)&&n!=='FINALIZADO'&&n!=='NAO_APLICA';}
+function calcDias(inicio, termino, conclusao) {
+  if (conclusao && termino) {
+    var diff = (new Date(termino+'T00:00:00') - new Date(conclusao+'T00:00:00')) / 86400000;
+    return Math.round(diff);
   }
   return null;
 }
-
-// ── addMonths (mirrors Python logic) ─────────────────────────────────────────
-function addMonths(d, months) {
-  const date = new Date(d + 'T00:00:00Z');
-  const targetMonth = date.getUTCMonth() + months;
-  const y = date.getUTCFullYear() + Math.floor(targetMonth / 12);
-  const mo = ((targetMonth % 12) + 12) % 12;
-  const maxDay = new Date(Date.UTC(y, mo + 1, 0)).getUTCDate();
-  const day = Math.min(date.getUTCDate(), maxDay);
-  const r = new Date(Date.UTC(y, mo, day));
-  return r.toISOString().substring(0, 10);
+function toast(msg, type) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' ' + type : '');
+  setTimeout(function(){ el.className = 'toast'; }, 3000);
 }
 
-// ── Parse Excel workbook ──────────────────────────────────────────────────────
-function parseExcel(buffer) {
-  const wb = XLSX.read(buffer, { type: 'array', cellDates: true });
-  const ws = wb.Sheets[wb.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null });
-
-  const tasks = [];
-  // Python: min_row=5, max_row=70 → 0-indexed: rows[4] to rows[69]
-  for (let i = 4; i < Math.min(rows.length, 70); i++) {
-    const row = rows[i] || [];
-    const tema = row[1] != null ? String(row[1]).trim() : '';
-    const ativ = row[2] != null ? String(row[2]).trim() : '';
-    if (!tema && !ativ) continue;
-
-    const diasVal = row[10];
-    let dias = null;
-    if (typeof diasVal === 'number' && !(diasVal instanceof Date)) {
-      dias = diasVal;
-    } else if (typeof diasVal === 'string' && !isNaN(parseFloat(diasVal))) {
-      dias = parseFloat(diasVal);
-    }
-
-    tasks.push({
-      id:           i + 1,
-      tema,
-      atividade:    ativ,
-      mes_ref:      row[3]  != null ? String(row[3]).trim()  : '',
-      responsavel:  row[4]  != null ? String(row[4]).trim()  : '',
-      recorrencia:  row[5]  != null ? String(row[5]).trim()  : '',
-      status:       row[6]  != null ? String(row[6]).trim()  : '',
-      inicio:       parseExcelDate(row[7]),
-      termino:      parseExcelDate(row[8]),
-      conclusao:    parseExcelDate(row[9]),
-      dias,
-      status_geral: row[11] != null ? String(row[11]).trim() : '',
-      prioridade:   row[12] != null ? String(row[12]).trim() : '',
-      comentarios:  row[13] != null ? String(row[13]).trim() : '',
-      gerada:       false,
-    });
+// ── FILTERS & SELECTS ────────────────────────────────────────────────────────
+function pf() {
+  function fill(id, f) {
+    var s = document.getElementById(id); var c = s.value; var v = [];
+    D.forEach(function(t){ if(t[f] && v.indexOf(t[f])<0) v.push(t[f]); }); v.sort();
+    s.innerHTML = '<option value="">Todos</option>' + v.map(function(x){ return '<option value="'+x+'"'+(x===c?' selected':'')+'>'+x+'</option>'; }).join('');
   }
-  return tasks;
+  fill('fr','responsavel'); fill('ft','tema'); fill('fst','status'); fill('frc','recorrencia');
+  var ms=[]; D.forEach(function(t){ if(t.termino){var m=t.termino.substring(0,7);if(ms.indexOf(m)<0)ms.push(m);} }); ms.sort();
+  var sm=document.getElementById('fm'); var cv2=sm.value;
+  sm.innerHTML='<option value="">Todos</option>'+ms.map(function(v){var p=v.split('-');var l=new Date(parseInt(p[0]),parseInt(p[1])-1).toLocaleDateString('pt-BR',{month:'short',year:'numeric'});return'<option value="'+v+'"'+(v===cv2?' selected':'')+'>'+l+'</option>';}).join('');
+  // fill responsavel datalist
+  var dl=document.getElementById('resp-list'); if(!dl) return;
+  var rv=[]; D.forEach(function(t){ if(t.responsavel && rv.indexOf(t.responsavel)<0) rv.push(t.responsavel); }); rv.sort();
+  dl.innerHTML = rv.map(function(r){ return '<option value="'+r+'">'; }).join('');
 }
-
-// ── Generate future recurring tasks ──────────────────────────────────────────
-function generateFutureTasks(tasks) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayStr = today.toISOString().substring(0, 10);
-  const future = [];
-
-  for (const t of tasks) {
-    const rec = (t.recorrencia || '').toUpperCase().trim();
-    if (!['SEMANAL', 'MENSAL', 'SEMESTRAL'].includes(rec)) continue;
-    if (!t.termino) continue;
-
-    const terminoDate = new Date(t.termino + 'T00:00:00');
-    const inicioDate  = t.inicio ? new Date(t.inicio + 'T00:00:00') : terminoDate;
-
-    if (terminoDate >= today) continue; // still active
-
-    const durDays = Math.max((terminoDate - inicioDate) / 86400000, 1);
-
-    let niStr, ntStr;
-
-    if (rec === 'SEMANAL') {
-      const weeks = Math.max(1, Math.floor((today - inicioDate) / (7 * 86400000)) + 1);
-      const ni = new Date(inicioDate.getTime() + weeks * 7 * 86400000);
-      const nt = new Date(ni.getTime() + durDays * 86400000);
-      niStr = ni.toISOString().substring(0, 10);
-      ntStr = nt.toISOString().substring(0, 10);
-
-    } else if (rec === 'MENSAL') {
-      let months = (today.getFullYear() - inicioDate.getFullYear()) * 12
-                 + (today.getMonth() - inicioDate.getMonth());
-      months = Math.max(months, 1);
-      niStr = addMonths(t.inicio, months);
-      ntStr = addMonths(t.termino, months);
-
-    } else if (rec === 'SEMESTRAL') {
-      let months = Math.floor(
-        ((today.getFullYear() - inicioDate.getFullYear()) * 12
-        + (today.getMonth() - inicioDate.getMonth()) + 5) / 6
-      ) * 6;
-      months = Math.max(months, 6);
-      niStr = addMonths(t.inicio, months);
-      ntStr = addMonths(t.termino, months);
-    }
-
-    const newTask = { ...t };
-    newTask.id           = `g${t.id}`;
-    newTask.inicio       = niStr;
-    newTask.termino      = ntStr;
-    newTask.status       = 'NÃO INICIADO';
-    newTask.status_geral = 'TBD';
-    newTask.conclusao    = null;
-    newTask.dias         = null;
-    newTask.comentarios  = `[Gerado automaticamente — recorrência ${t.recorrencia}]`;
-    newTask.gerada       = true;
-    future.push(newTask);
-  }
-  return future;
-}
-
-// ── Process buffer (ArrayBuffer) → load dashboard ────────────────────────────
-function processBuffer(buffer) {
-  showLoading(true);
-  try {
-    const tasks   = parseExcel(new Uint8Array(buffer));
-    const future  = generateFutureTasks(tasks);
-    ALL_TASKS     = tasks.concat(future);
-
-    document.getElementById('last-update').textContent =
-      'Atualizado: ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
-    populateFilters();
-    render();
-    hideSplash();
-  } catch (e) {
-    showError('Erro ao ler o arquivo: ' + e.message);
-    console.error(e);
-  } finally {
-    showLoading(false);
-  }
-}
-
-// ── File picker ───────────────────────────────────────────────────────────────
-document.getElementById('file-input').addEventListener('change', function () {
-  const file = this.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => processBuffer(e.target.result);
-  reader.readAsArrayBuffer(file);
-});
-
-// ── Drag & drop ───────────────────────────────────────────────────────────────
-const dropArea = document.getElementById('drop-area');
-dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.classList.add('dragover'); });
-dropArea.addEventListener('dragleave', () => dropArea.classList.remove('dragover'));
-dropArea.addEventListener('drop', e => {
-  e.preventDefault();
-  dropArea.classList.remove('dragover');
-  const file = e.dataTransfer.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => processBuffer(ev.target.result);
-  reader.readAsArrayBuffer(file);
-});
-
-// ── Load from URL ─────────────────────────────────────────────────────────────
-function toggleUrlPanel() {
-  const panel = document.getElementById('url-panel');
-  panel.classList.toggle('open');
-  if (panel.classList.contains('open')) document.getElementById('url-input').focus();
-}
-
-async function loadFromUrl() {
-  const url = document.getElementById('url-input').value.trim();
-  if (!url) return;
-  showLoading(true);
-  try {
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const buffer = await resp.arrayBuffer();
-    processBuffer(buffer);
-  } catch (e) {
-    showLoading(false);
-    showError('Não foi possível carregar da URL: ' + e.message);
-  }
-}
-
-// ── Splash helpers ────────────────────────────────────────────────────────────
-function showSplash() {
-  document.getElementById('splash').classList.remove('hidden');
-}
-function hideSplash() {
-  document.getElementById('splash').classList.add('hidden');
-}
-function showLoading(on) {
-  document.getElementById('loading').classList.toggle('hidden', !on);
-}
-function showError(msg) {
-  const bar = document.getElementById('error-bar');
-  bar.style.display = msg ? 'block' : 'none';
-  bar.textContent = msg ? '⚠ ' + msg : '';
-}
-
-// ── Auto-load from ?src=URL param ─────────────────────────────────────────────
-(async function autoLoad() {
-  const src = new URLSearchParams(location.search).get('src');
-  if (!src) return;
-  document.getElementById('url-input').value = src;
-  showLoading(true);
-  try {
-    const resp = await fetch(src);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const buffer = await resp.arrayBuffer();
-    processBuffer(buffer);
-  } catch (e) {
-    showLoading(false);
-    showError('Erro ao carregar automaticamente: ' + e.message);
-  }
-})();
-
-// ── Filters ──────────────────────────────────────────────────────────────────
-function populateFilters() {
-  function fill(id, field) {
-    const sel = document.getElementById(id);
-    const cur = sel.value;
-    const vals = [...new Set(ALL_TASKS.map(t => t[field]).filter(Boolean))].sort();
-    sel.innerHTML = '<option value="">Todos</option>' +
-      vals.map(v => `<option value="${v}"${v===cur?' selected':''}>${v}</option>`).join('');
-  }
-  fill('f-resp',   'responsavel');
-  fill('f-tema',   'tema');
-  fill('f-status', 'status');
-  fill('f-rec',    'recorrencia');
-
-  const meses = [...new Set(ALL_TASKS.map(t => {
-    if (!t.termino) return null;
-    const [y,m] = t.termino.split('-');
-    return `${y}-${m}`;
-  }).filter(Boolean))].sort();
-  const selM = document.getElementById('f-mes');
-  const curM = selM.value;
-  selM.innerHTML = '<option value="">Todos</option>' +
-    meses.map(v => {
-      const [y,m] = v.split('-');
-      const label = new Date(+y, +m-1).toLocaleDateString('pt-BR',{month:'short',year:'numeric'});
-      return `<option value="${v}"${v===curM?' selected':''}>${label}</option>`;
-    }).join('');
-}
-
-function getFiltered() {
-  const search = document.getElementById('f-search').value.toLowerCase().trim();
-  const resp   = document.getElementById('f-resp').value;
-  const tema   = document.getElementById('f-tema').value;
-  const status = document.getElementById('f-status').value;
-  const rec    = document.getElementById('f-rec').value;
-  const mes    = document.getElementById('f-mes').value;
-
-  return ALL_TASKS.filter(t => {
-    if (resp   && t.responsavel !== resp)   return false;
-    if (tema   && t.tema !== tema)           return false;
-    if (status && t.status !== status)       return false;
-    if (rec    && t.recorrencia !== rec)     return false;
-    if (mes) {
-      const tm = t.termino ? t.termino.substring(0,7) : '';
-      if (tm !== mes) return false;
-    }
-    if (search) {
-      const hay = `${t.atividade} ${t.comentarios} ${t.responsavel}`.toLowerCase();
-      if (!hay.includes(search)) return false;
-    }
+function gf() {
+  var s=document.getElementById('fs').value.toLowerCase().trim();
+  var r=document.getElementById('fr').value,t=document.getElementById('ft').value,st2=document.getElementById('fst').value,rc=document.getElementById('frc').value,m=document.getElementById('fm').value;
+  return D.filter(function(x){
+    if(r&&x.responsavel!==r)return false;if(t&&x.tema!==t)return false;if(st2&&x.status!==st2)return false;if(rc&&x.recorrencia!==rc)return false;
+    if(m&&(!x.termino||x.termino.substring(0,7)!==m))return false;
+    if(s){var h=((x.atividade||'')+' '+(x.comentarios||'')+' '+(x.responsavel||'')).toLowerCase();if(h.indexOf(s)<0)return false;}
     return true;
   });
 }
 
-// ── Stats ────────────────────────────────────────────────────────────────────
-function renderStats(tasks) {
-  const total   = tasks.length;
-  const done    = tasks.filter(t => ['FINALIZADO','NÃO SE APLICA'].includes(t.status)).length;
-  const prog    = tasks.filter(t => t.status === 'EM ANDAMENTO').length;
-  const pending = tasks.filter(t => t.status === 'NÃO INICIADO').length;
-  const late    = tasks.filter(t => {
-    if (!t.termino) return false;
-    const today = new Date().toISOString().substring(0,10);
-    return t.termino < today && !['FINALIZADO','NÃO SE APLICA'].includes(t.status);
-  }).length;
-  const gen     = tasks.filter(t => t.gerada).length;
-
-  const pct = total ? Math.round(done / total * 100) : 0;
-
-  const cards = [
-    { label: 'Total',          value: total,   sub: '100%',          color: '#3b82f6' },
-    { label: 'Finalizadas',    value: done,     sub: pct+'%',         color: '#10b981' },
-    { label: 'Em Andamento',   value: prog,     sub: '',              color: '#06b6d4' },
-    { label: 'Não Iniciadas',  value: pending,  sub: '',              color: '#6366f1' },
-    { label: 'Atrasadas',      value: late,     sub: late?'⚠ atenção':'ok', color: late?'#ef4444':'#10b981' },
-    { label: 'Auto-geradas',   value: gen,      sub: 'próx. recor.',  color: '#f59e0b' },
+// ── RENDER STATS ─────────────────────────────────────────────────────────────
+function rs(tasks){
+  var total=tasks.length, done=tasks.filter(function(t){var n=ns(t.status);return n==='FINALIZADO'||n==='NAO_APLICA';}).length;
+  var prog=tasks.filter(function(t){return ns(t.status)==='EM ANDAMENTO';}).length;
+  var pend=tasks.filter(function(t){return ns(t.status)==='NAO_INICIADO';}).length;
+  var late=tasks.filter(il).length, warn=tasks.filter(iw).length;
+  var pct=total?Math.round(done/total*100):0;
+  var cards=[
+    {l:'Total',v:total,s:null,c:'#3b82f6',bar:null},
+    {l:'Finalizadas',v:done,s:pct+'% conclu\u00eddo',c:'#10b981',bar:pct},
+    {l:'Em Andamento',v:prog,s:null,c:'#06b6d4',bar:null},
+    {l:'N\u00e3o Iniciadas',v:pend,s:null,c:'#6366f1',bar:null},
+    {l:'Atrasadas',v:late,s:late?'aten\u00e7\u00e3o':'ok',c:late?'#ef4444':'#10b981',bar:null},
+    {l:'Vencem em 7d',v:warn,s:warn?'aten\u00e7\u00e3o':'ok',c:warn?'#f59e0b':'#10b981',bar:null}
   ];
-
-  document.getElementById('stats-grid').innerHTML = cards.map(c => `
-    <div class="stat-card" style="--accent:${c.color}">
-      <div class="stat-label">${c.label}</div>
-      <div class="stat-value">${c.value}</div>
-      ${c.sub ? `<div class="stat-sub">${c.sub}</div>` : ''}
-    </div>
-  `).join('');
-}
-
-// ── Kanban ────────────────────────────────────────────────────────────────────
-function renderKanban(tasks) {
-  const board = document.getElementById('kanban-board');
-
-  const cols = STATUS_KANBAN.map(col => {
-    const colTasks = tasks.filter(t => (t.status||'').toUpperCase() === col.key);
-    return { ...col, tasks: colTasks };
-  });
-
-  const known = STATUS_KANBAN.map(c => c.key);
-  const extra = [...new Set(tasks.map(t => (t.status||'').toUpperCase()).filter(s => s && !known.includes(s)))];
-  extra.forEach(key => cols.push({ key, label: key, color: '#475569', tasks: tasks.filter(t => (t.status||'').toUpperCase() === key) }));
-
-  board.innerHTML = cols.filter(c => c.tasks.length > 0).map(col => `
-    <div class="kanban-col">
-      <div class="kanban-col-header">
-        <div class="col-dot" style="background:${col.color}"></div>
-        <span>${col.label}</span>
-        <span class="col-count">${col.tasks.length}</span>
-      </div>
-      <div class="kanban-cards">
-        ${col.tasks.map(t => taskCard(t)).join('')}
-        ${col.tasks.length === 0 ? '<div style="color:var(--text3);text-align:center;padding:20px;font-size:12px">Nenhuma tarefa</div>' : ''}
-      </div>
-    </div>
-  `).join('');
-
-  if (tasks.length === 0) {
-    board.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
-      <p>Nenhuma tarefa encontrada com os filtros selecionados.</p>
-    </div>`;
-  }
-}
-
-function taskCard(t) {
-  const color = temaColor(t.tema);
-  const today = new Date().toISOString().substring(0,10);
-  const isLate = t.termino && t.termino < today && !['FINALIZADO','NÃO SE APLICA'].includes(t.status);
-
-  return `
-    <div class="task-card" style="--tema-color:${color}" onclick='openModal(${JSON.stringify(t).replace(/'/g,"&apos;")})'>
-      <div class="card-top">
-        <span class="card-title">${t.atividade || '—'}</span>
-        ${t.gerada ? '<span class="badge badge-generated">↻ auto</span>' : ''}
-        ${isLate   ? '<span class="badge badge-priority">⚑ atrasado</span>' : ''}
-      </div>
-      <div class="card-meta">
-        <span class="tema-badge" style="background:${color}">${t.tema || '—'}</span>
-        ${t.recorrencia ? `<span class="rec-badge">${t.recorrencia}</span>` : ''}
-        <span class="meta-chip">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          ${t.responsavel || '—'}
-        </span>
-        ${t.termino ? `<span class="meta-chip">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          ${fmtDate(t.termino)}
-        </span>` : ''}
-        ${t.dias != null ? `<span class="meta-chip" style="color:${diasColor(t.dias)}">
-          ${t.dias > 0 ? '+' : ''}${Math.round(t.dias)}d
-        </span>` : ''}
-      </div>
-    </div>
-  `;
-}
-
-// ── Table ────────────────────────────────────────────────────────────────────
-function renderTable(tasks) {
-  const sorted = [...tasks].sort((a, b) => {
-    const va = a[sortCol] ?? '', vb = b[sortCol] ?? '';
-    return sortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
-  });
-
-  const today = new Date().toISOString().substring(0,10);
-
-  document.getElementById('table-body').innerHTML = sorted.map(t => {
-    const isLate = t.termino && t.termino < today && !['FINALIZADO','NÃO SE APLICA'].includes(t.status);
-    const color = temaColor(t.tema);
-    return `
-      <tr class="${t.gerada ? 'generated-row' : ''}" style="cursor:pointer" onclick='openModal(${JSON.stringify(t).replace(/'/g,"&apos;")})'>
-        <td>
-          <span style="font-weight:600">${t.atividade || '—'}</span>
-          ${isLate ? ' <span style="color:var(--red);font-size:11px">⚑</span>' : ''}
-        </td>
-        <td><span class="tema-badge" style="background:${color}">${t.tema || '—'}</span></td>
-        <td>${t.responsavel || '—'}</td>
-        <td>${statusPill(t.status)}</td>
-        <td>${statusPill(t.status_geral)}</td>
-        <td>${t.recorrencia ? `<span class="rec-badge">${t.recorrencia}</span>` : '—'}</td>
-        <td style="white-space:nowrap">${fmtDate(t.inicio)}</td>
-        <td style="white-space:nowrap;color:${isLate?'var(--red)':'inherit'}">${fmtDate(t.termino)}</td>
-        <td style="color:${diasColor(t.dias)};font-weight:600">
-          ${t.dias != null ? (t.dias > 0 ? '+' : '') + Math.round(t.dias) : '—'}
-        </td>
-      </tr>
-    `;
+  document.getElementById('sg').innerHTML=cards.map(function(c){
+    return'<div class="stat-card" style="--accent:'+c.c+'"><div class="stat-label">'+c.l+'</div><div class="stat-value">'+c.v+'</div>'+(c.s?'<div class="stat-sub">'+c.s+'</div>':'')+(c.bar!=null?'<div class="stat-bar"><div class="stat-bar-fill" style="width:'+c.bar+'%"></div></div>':'')+'</div>';
   }).join('');
+}
 
-  if (sorted.length === 0) {
-    document.getElementById('table-body').innerHTML =
-      '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text3)">Nenhuma tarefa encontrada.</td></tr>';
+// ── RENDER ALERTS ────────────────────────────────────────────────────────────
+function ra(){
+  var late=D.filter(il).sort(function(a,b){return a.termino<b.termino?-1:1;});
+  var warn=D.filter(iw).sort(function(a,b){return a.termino<b.termino?-1:1;});
+  var prog=D.filter(function(t){return ns(t.status)==='EM ANDAMENTO';}).sort(function(a,b){return(a.termino||'9')<(b.termino||'9')?-1:1;});
+  var panels=[
+    {id:'al1',title:'Atrasadas',cls:'ac-red',dot:'#ef4444',items:late,type:'late'},
+    {id:'al2',title:'Vencem em 7 dias',cls:'ac-yellow',dot:'#f59e0b',items:warn,type:'warn'},
+    {id:'al3',title:'Em Andamento',cls:'ac-blue',dot:'#3b82f6',items:prog,type:'prog'}
+  ];
+  document.getElementById('alerts-grid').innerHTML=panels.map(function(p){
+    var body=p.items.length===0
+      ?'<div class="alert-empty">Nenhum item \u2014 tudo em ordem</div>'
+      :p.items.map(function(t){
+          var idx=D.indexOf(t);
+          var dc2=p.type==='late'?'dred':p.type==='warn'?'dyellow':'dblue';
+          var daysText='';
+          if(t.termino){var diff=Math.round((new Date(t.termino+'T00:00:00')-new Date(today()+'T00:00:00'))/86400000);daysText=p.type==='late'?Math.abs(diff)+'d atraso':diff===0?'vence hoje':diff===1?'vence amanh\u00e3':diff+'d restantes';}
+          return'<div class="alert-item" onclick="openView(D['+idx+'])">'
+            +'<span class="alert-item-name">'+(t.atividade||'-')+'</span>'
+            +'<div class="alert-item-meta"><span class="alert-item-date '+dc2+'">'+daysText+'</span><span class="alert-item-resp">'+(t.responsavel||'-')+'</span></div>'
+            +'</div>';
+        }).join('');
+    var stored=localStorage.getItem('alert-'+p.id);
+    var collapsed=stored==='1';
+    return'<div class="alert-card'+(collapsed?' collapsed':'')+'" id="'+p.id+'">'
+      +'<div class="alert-card-header" onclick="toggleAlert(\''+p.id+'\')">'
+      +'<div class="alert-dot" style="background:'+p.dot+'"></div>'
+      +'<span>'+p.title+'</span>'
+      +'<span class="alert-count '+p.cls+'">'+p.items.length+'</span>'
+      +'<span class="alert-chevron">&#9660;</span>'
+      +'</div>'
+      +'<div class="alert-body'+(collapsed?' hidden':'')+'" id="'+p.id+'-body">'+body+'</div>'
+      +'</div>';
+  }).join('');
+}
+function toggleAlert(id){
+  var card=document.getElementById(id),body=document.getElementById(id+'-body');
+  body.classList.toggle('hidden');
+  var c=body.classList.contains('hidden');
+  card.classList.toggle('collapsed',c);
+  localStorage.setItem('alert-'+id,c?'1':'0');
+}
+
+// ── KANBAN ───────────────────────────────────────────────────────────────────
+function rk(tasks){
+  var cols=SC.map(function(col){return{k:col.k,l:col.l,c:col.c,tasks:tasks.filter(function(t){return ns(t.status)===col.k;})};});
+  var kn=SC.map(function(c){return c.k;}),ex=[];
+  tasks.forEach(function(t){var n=ns(t.status);if(n&&kn.indexOf(n)<0&&ex.indexOf(n)<0)ex.push(n);});
+  ex.forEach(function(k){cols.push({k:k,l:k,c:'#94a3b8',tasks:tasks.filter(function(t){return ns(t.status)===k;})});});
+  var ac=cols.filter(function(c){return c.tasks.length>0;});
+  if(!ac.length){document.getElementById('kb').innerHTML='<div style="color:var(--text3);text-align:center;padding:60px;grid-column:1/-1">Nenhuma tarefa encontrada.</div>';return;}
+  document.getElementById('kb').innerHTML=ac.map(function(col){
+    return'<div class="kanban-col"><div class="kanban-col-header"><div class="col-dot" style="background:'+col.c+'"></div><span>'+col.l+'</span><span class="col-count">'+col.tasks.length+'</span></div>'
+      +'<div class="kanban-cards">'+col.tasks.map(function(t){return cd(t);}).join('')+'</div></div>';
+  }).join('');
+}
+var _cur=[];
+function cd(t){
+  var color=tc(t.tema),late=il(t),warn=iw(t);
+  var cls=late?' is-late':warn?' is-warn':'';
+  return'<div class="task-card'+cls+'" style="--tc:'+color+'" onclick="openView(this_t)" data-id="'+(t.id||'')+'">'.replace('this_t','getById('+t.id+')')
+    +'<div class="card-top"><span class="card-title">'+(t.atividade||'-')+'</span>'
+    +(t.gerada?'<span class="badge badge-auto">auto</span>':'')
+    +(late?'<span class="badge badge-late">atrasado</span>':warn?'<span class="badge badge-warn">vence em breve</span>':'')
+    +'</div>'
+    +'<div class="card-meta">'
+    +'<span class="tb" style="background:'+color+'">'+(t.tema||'-')+'</span>'
+    +(t.recorrencia?'<span class="rb">'+t.recorrencia+'</span>':'')
+    +'<span class="mc">'+(t.responsavel||'-')+'</span>'
+    +(t.termino?'<span class="mc">'+fd(t.termino)+'</span>':'')
+    +(t.dias!=null?'<span class="mc" style="color:'+dc(t.dias)+';font-weight:600">'+(t.dias>0?'+':'')+Math.round(t.dias)+'d</span>':'')
+    +'</div></div>';
+}
+function getById(id){ return D.filter(function(t){return t.id===id;})[0]||null; }
+
+// ── TABLE ────────────────────────────────────────────────────────────────────
+function rt(tasks){
+  _cur=tasks;
+  var sorted=tasks.slice().sort(function(a,b){var va=a[sc]!=null?String(a[sc]):'',vb=b[sc]!=null?String(b[sc]):'';return sa?va.localeCompare(vb):vb.localeCompare(va);});
+  document.getElementById('tb2').innerHTML=sorted.map(function(t){
+    var late=il(t),warn=iw(t),color=tc(t.tema);
+    var rc=late?' class="row-late"':warn?' class="row-warn"':'';
+    return'<tr'+rc+' onclick="openView(getById('+t.id+'))">'
+      +'<td><span style="font-weight:600">'+(t.atividade||'-')+'</span>'+(late?' <span style="color:var(--red)">&#9888;</span>':warn?' <span style="color:var(--yellow)">&#9679;</span>':'')+'</td>'
+      +'<td><span class="tb" style="background:'+color+'">'+(t.tema||'-')+'</span></td>'
+      +'<td>'+(t.responsavel||'-')+'</td>'
+      +'<td>'+sp(t.status)+'</td>'
+      +'<td>'+sp(t.status_geral)+'</td>'
+      +'<td>'+(t.recorrencia?'<span class="rb">'+t.recorrencia+'</span>':'-')+'</td>'
+      +'<td style="color:var(--text3)">'+fd(t.inicio)+'</td>'
+      +'<td style="font-weight:600;color:'+(late?'var(--red)':warn?'var(--yellow)':'inherit')+'">'+fd(t.termino)+'</td>'
+      +'<td style="color:'+dc(t.dias)+';font-weight:600">'+(t.dias!=null?(t.dias>0?'+':'')+Math.round(t.dias):'-')+'</td>'
+      +'</tr>';
+  }).join('');
+  if(!sorted.length) document.getElementById('tb2').innerHTML='<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text3)">Nenhuma tarefa encontrada.</td></tr>';
+}
+function st(col){if(sc===col)sa=!sa;else{sc=col;sa=true;}rt(gf());}
+function render(){var tasks=gf();_cur=tasks;rs(tasks);ra();if(cv==='kanban')rk(tasks);else rt(tasks);}
+function sv(v){cv=v;document.getElementById('vk').style.display=v==='kanban'?'':'none';document.getElementById('vt').style.display=v==='table'?'':'none';document.getElementById('bk').classList.toggle('active',v==='kanban');document.getElementById('bt').classList.toggle('active',v==='table');render();}
+
+// ── VIEW MODAL ───────────────────────────────────────────────────────────────
+function openView(t){
+  if(!t)return;
+  _viewTask=t;
+  document.getElementById('mt').textContent=t.atividade||'-';
+  var color=tc(t.tema),late=il(t),warn=iw(t);
+  document.getElementById('mb').innerHTML=
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">'
+    +'<span class="tb" style="background:'+color+'">'+(t.tema||'-')+'</span>'
+    +sp(t.status)+sp(t.status_geral)
+    +(t.recorrencia?'<span class="rb">'+t.recorrencia+'</span>':'')
+    +(late?'<span class="badge badge-late">Atrasado</span>':warn?'<span class="badge badge-warn">Vence em breve</span>':'')
+    +'</div>'
+    +'<div class="modal-row">'
+    +'<div class="mf"><label>Respons\u00e1vel</label><p>'+(t.responsavel||'-')+'</p></div>'
+    +'<div class="mf"><label>M\u00eas Ref.</label><p>'+(t.mes_ref||'-')+'</p></div>'
+    +'<div class="mf"><label>In\u00edcio</label><p>'+fd(t.inicio)+'</p></div>'
+    +'<div class="mf"><label>T\u00e9rmino</label><p style="color:'+(late?'var(--red)':warn?'var(--yellow)':'inherit')+';font-weight:'+(late||warn?700:500)+'">'+fd(t.termino)+'</p></div>'
+    +'<div class="mf"><label>Conclus\u00e3o</label><p>'+fd(t.conclusao)+'</p></div>'
+    +'<div class="mf"><label>Dias</label><p style="color:'+dc(t.dias)+';font-weight:700">'+(t.dias!=null?(t.dias>0?'+':'')+Math.round(t.dias)+' dias':'-')+'</p></div>'
+    +'</div>'
+    +(t.comentarios?'<div class="mf"><label>Coment\u00e1rios</label><div class="mc2">'+t.comentarios+'</div></div>':'');
+  document.getElementById('mo').classList.add('open');
+}
+function openEditFromView(){cmv();openEdit(_viewTask);}
+function cmv(e){if(!e||e.target===document.getElementById('mo'))document.getElementById('mo').classList.remove('open');}
+
+// ── EDIT MODAL ───────────────────────────────────────────────────────────────
+function openNew(){
+  _editId=null;
+  document.getElementById('edit-title').textContent='Nova Tarefa';
+  document.getElementById('btn-delete').style.display='none';
+  clearForm();
+  document.getElementById('emo').classList.add('open');
+}
+function openEdit(t){
+  if(!t)return;
+  _editId=t.id;
+  document.getElementById('edit-title').textContent='Editar Tarefa';
+  document.getElementById('btn-delete').style.display='';
+  fillForm(t);
+  document.getElementById('emo').classList.add('open');
+}
+function cme(e){if(!e||e.target===document.getElementById('emo'))document.getElementById('emo').classList.remove('open');}
+function clearForm(){
+  ['fe-atividade','fe-responsavel','fe-comentarios'].forEach(function(id){document.getElementById(id).value='';});
+  ['fe-tema','fe-status','fe-status_geral','fe-recorrencia','fe-mes_ref'].forEach(function(id){document.getElementById(id).value='';});
+  ['fe-inicio','fe-termino','fe-conclusao'].forEach(function(id){document.getElementById(id).value='';});
+}
+function fillForm(t){
+  document.getElementById('fe-atividade').value=t.atividade||'';
+  document.getElementById('fe-tema').value=t.tema||'';
+  document.getElementById('fe-responsavel').value=t.responsavel||'';
+  document.getElementById('fe-status').value=t.status||'';
+  document.getElementById('fe-status_geral').value=t.status_geral||'';
+  document.getElementById('fe-recorrencia').value=t.recorrencia||'';
+  document.getElementById('fe-mes_ref').value=t.mes_ref||'';
+  document.getElementById('fe-inicio').value=t.inicio||'';
+  document.getElementById('fe-termino').value=t.termino||'';
+  document.getElementById('fe-conclusao').value=t.conclusao||'';
+  document.getElementById('fe-comentarios').value=t.comentarios||'';
+}
+function readForm(){
+  var inicio=document.getElementById('fe-inicio').value||null;
+  var termino=document.getElementById('fe-termino').value||null;
+  var conclusao=document.getElementById('fe-conclusao').value||null;
+  return {
+    atividade:document.getElementById('fe-atividade').value.trim(),
+    tema:document.getElementById('fe-tema').value,
+    responsavel:document.getElementById('fe-responsavel').value.trim(),
+    status:document.getElementById('fe-status').value,
+    status_geral:document.getElementById('fe-status_geral').value,
+    recorrencia:document.getElementById('fe-recorrencia').value,
+    mes_ref:document.getElementById('fe-mes_ref').value,
+    inicio:inicio, termino:termino, conclusao:conclusao,
+    dias:calcDias(inicio,termino,conclusao),
+    comentarios:document.getElementById('fe-comentarios').value.trim(),
+    prioridade:'', gerada:false
+  };
+}
+function saveTask(){
+  var t=readForm();
+  if(!t.atividade){toast('Atividade \u00e9 obrigat\u00f3ria','err');return;}
+  if(_editId===null){
+    t.id=nextId();
+    D.push(t);
+    toast('Tarefa criada!','ok');
+  } else {
+    var idx=D.findIndex(function(x){return x.id===_editId;});
+    if(idx>=0){t.id=_editId;D[idx]=t;toast('Tarefa salva!','ok');}
   }
-
-  document.querySelectorAll('thead th').forEach(th => th.classList.remove('sorted'));
+  saveData();cme();pf();render();
+}
+function deleteTask(){
+  if(!confirm('Excluir esta tarefa? Esta a\u00e7\u00e3o n\u00e3o pode ser desfeita.'))return;
+  var idx=D.findIndex(function(x){return x.id===_editId;});
+  if(idx>=0)D.splice(idx,1);
+  saveData();cme();pf();render();toast('Tarefa exclu\u00edda');
 }
 
-function sortTable(col) {
-  if (sortCol === col) sortAsc = !sortAsc;
-  else { sortCol = col; sortAsc = true; }
-  renderTable(getFiltered());
-}
-
-// ── Render ────────────────────────────────────────────────────────────────────
-function render() {
-  const tasks = getFiltered();
-  renderStats(tasks);
-  if (currentView === 'kanban') renderKanban(tasks);
-  else renderTable(tasks);
-}
-
-function setView(v) {
-  currentView = v;
-  document.getElementById('view-kanban').style.display = v === 'kanban' ? '' : 'none';
-  document.getElementById('view-table').style.display  = v === 'table'  ? '' : 'none';
-  document.getElementById('btn-kanban').classList.toggle('active', v === 'kanban');
-  document.getElementById('btn-table').classList.toggle('active', v === 'table');
-  render();
-}
-
-// ── Modal ─────────────────────────────────────────────────────────────────────
-function openModal(t) {
-  document.getElementById('modal-title').textContent = t.atividade || '—';
-  const color = temaColor(t.tema);
-  document.getElementById('modal-body').innerHTML = `
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-      <span class="tema-badge" style="background:${color}">${t.tema || '—'}</span>
-      ${statusPill(t.status)}
-      ${statusPill(t.status_geral)}
-      ${t.recorrencia ? `<span class="rec-badge">${t.recorrencia}</span>` : ''}
-      ${t.gerada ? '<span class="badge badge-generated">↻ Gerada automaticamente</span>' : ''}
-      ${t.prioridade === '!' ? '<span class="badge badge-priority">! Alta prioridade</span>' : ''}
-    </div>
-    <div class="modal-row">
-      <div class="modal-field"><label>Responsável</label><p>${t.responsavel || '—'}</p></div>
-      <div class="modal-field"><label>Mês Referência</label><p>${t.mes_ref || '—'}</p></div>
-      <div class="modal-field"><label>Início</label><p>${fmtDate(t.inicio)}</p></div>
-      <div class="modal-field"><label>Término</label><p>${fmtDate(t.termino)}</p></div>
-      <div class="modal-field"><label>Conclusão</label><p>${fmtDate(t.conclusao)}</p></div>
-      <div class="modal-field">
-        <label>Dias</label>
-        <p style="color:${diasColor(t.dias)};font-weight:700">
-          ${t.dias != null ? (t.dias > 0 ? '+' : '') + Math.round(t.dias) + ' dias' : '—'}
-        </p>
-      </div>
-    </div>
-    ${t.comentarios ? `
-      <div class="modal-field">
-        <label>Comentários / Observações</label>
-        <div class="modal-comments">${t.comentarios}</div>
-      </div>
-    ` : ''}
-  `;
-  document.getElementById('modal-overlay').classList.add('open');
-}
-
-function closeModal(e) {
-  if (!e || e.target === document.getElementById('modal-overlay') || e.currentTarget.classList.contains('modal-close')) {
-    document.getElementById('modal-overlay').classList.remove('open');
+// ── EXCEL IMPORT ─────────────────────────────────────────────────────────────
+function triggerImport(){document.getElementById('import-input').click();}
+function parseDate(v){
+  if(!v)return null;
+  if(typeof v==='number'){var d=new Date(Math.round((v-25569)*86400000));return d.toISOString().substring(0,10);}
+  var s=String(v).trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;
+  var p=s.split(/[\/\-\.]/);
+  if(p.length===3){
+    if(p[2].length===4)return p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');
+    if(p[0].length===4)return p[0]+'-'+p[1].padStart(2,'0')+'-'+p[2].padStart(2,'0');
   }
+  return null;
+}
+function col(row,names){for(var i=0;i<names.length;i++){var k=names[i];if(row[k]!==undefined&&row[k]!==null&&row[k]!=='')return row[k];}return null;}
+function importExcel(input){
+  var file=input.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      var wb=XLSX.read(ev.target.result,{type:'binary'});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(ws,{defval:null});
+      if(!rows.length){toast('Planilha vazia','err');return;}
+      D=rows.map(function(r,i){
+        var inicio=parseDate(col(r,['Início','Inicio','inicio','INICIO','DATA INICIO']));
+        var termino=parseDate(col(r,['Término','Termino','termino','TERMINO','DATA TERMINO','FIM']));
+        var conclusao=parseDate(col(r,['Conclusão','Conclusao','conclusao','CONCLUSAO']));
+        var dias=col(r,['Dias','dias','DIAS']);
+        if(dias===null)dias=calcDias(inicio,termino,conclusao);
+        return{
+          id: col(r,['ID','id','Id'])||(i+1),
+          tema: col(r,['Tema','tema','TEMA'])||'',
+          atividade: col(r,['Atividade','atividade','ATIVIDADE','Tarefa','TAREFA'])||'',
+          mes_ref: col(r,['Mês Ref.','Mes Ref','mes_ref','MES_REF','MÊS','Mês','mes'])||'',
+          responsavel: col(r,['Responsável','Responsavel','responsavel','RESPONSAVEL'])||'',
+          recorrencia: col(r,['Recorrência','Recorrencia','recorrencia','RECORRENCIA'])||'',
+          status: col(r,['Status','status','STATUS'])||'',
+          inicio:inicio, termino:termino, conclusao:conclusao,
+          dias:typeof dias==='number'?dias:null,
+          status_geral: col(r,['Status Geral','status_geral','STATUS_GERAL','Status geral'])||'',
+          prioridade: col(r,['Prioridade','prioridade','PRIORIDADE'])||'',
+          comentarios: col(r,['Comentários','Comentarios','comentarios','COMENTARIOS','Obs','Observações'])||'',
+          gerada:false
+        };
+      });
+      saveData();pf();render();
+      toast('Importado! '+D.length+' tarefas carregadas.','ok');
+    }catch(e){toast('Erro ao importar: '+e.message,'err');}
+    input.value='';
+  };
+  reader.readAsBinaryString(file);
 }
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(e); });
+// ── LOAD FROM URL ────────────────────────────────────────────────────────────
+function loadFromURL(url, silent) {
+  if(!silent) toast('Carregando...','ok');
+  fetch(url)
+    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.arrayBuffer(); })
+    .then(function(buf){
+      var wb=XLSX.read(new Uint8Array(buf),{type:'array'});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(ws,{defval:null});
+      if(!rows.length){if(!silent)toast('Planilha vazia','err');return;}
+      D=rows.map(function(r,i){
+        var inicio=parseDate(col(r,['Início','Inicio','inicio','INICIO','DATA INICIO']));
+        var termino=parseDate(col(r,['Término','Termino','termino','TERMINO','DATA TERMINO','FIM']));
+        var conclusao=parseDate(col(r,['Conclusão','Conclusao','conclusao','CONCLUSAO']));
+        var dias=col(r,['Dias','dias','DIAS']);
+        if(dias===null)dias=calcDias(inicio,termino,conclusao);
+        return{
+          id:col(r,['ID','id','Id'])||(i+1),
+          tema:col(r,['Tema','tema','TEMA'])||'',
+          atividade:col(r,['Atividade','atividade','ATIVIDADE','Tarefa','TAREFA'])||'',
+          mes_ref:col(r,['Mês Ref.','Mes Ref','mes_ref','MES_REF','MÊS','Mês','mes'])||'',
+          responsavel:col(r,['Responsável','Responsavel','responsavel','RESPONSAVEL'])||'',
+          recorrencia:col(r,['Recorrência','Recorrencia','recorrencia','RECORRENCIA'])||'',
+          status:col(r,['Status','status','STATUS'])||'',
+          inicio:inicio,termino:termino,conclusao:conclusao,
+          dias:typeof dias==='number'?dias:null,
+          status_geral:col(r,['Status Geral','status_geral','STATUS_GERAL','Status geral'])||'',
+          prioridade:col(r,['Prioridade','prioridade','PRIORIDADE'])||'',
+          comentarios:col(r,['Comentários','Comentarios','comentarios','COMENTARIOS','Obs','Observações'])||'',
+          gerada:false
+        };
+      });
+      saveData();pf();render();
+      document.getElementById('hts').textContent='GitHub \u2713';
+      if(!silent)toast('Carregado! '+D.length+' tarefas.','ok');
+    })
+    .catch(function(e){if(!silent)toast('Erro ao carregar: '+e.message,'err');});
+}
 
-// ── Wire filters ──────────────────────────────────────────────────────────────
-['f-search','f-resp','f-tema','f-status','f-rec','f-mes'].forEach(id => {
-  document.getElementById(id).addEventListener('input', render);
-  document.getElementById(id).addEventListener('change', render);
+// ── EXCEL EXPORT ─────────────────────────────────────────────────────────────
+function exportExcel(){
+  if(typeof XLSX==='undefined'){toast('SheetJS n\u00e3o carregado (verifique conex\u00e3o)','err');return;}
+  var headers=['ID','Tema','Atividade','M\u00eas Ref.','Respons\u00e1vel','Recorr\u00eancia','Status','In\u00edcio','T\u00e9rmino','Conclus\u00e3o','Dias','Status Geral','Prioridade','Coment\u00e1rios'];
+  var rows=[headers].concat(D.map(function(t){
+    return[t.id,t.tema,t.atividade,t.mes_ref,t.responsavel,t.recorrencia,t.status,t.inicio,t.termino,t.conclusao,t.dias,t.status_geral,t.prioridade,t.comentarios];
+  }));
+  var wb=XLSX.utils.book_new();
+  var ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:6},{wch:16},{wch:32},{wch:12},{wch:16},{wch:14},{wch:16},{wch:12},{wch:12},{wch:12},{wch:6},{wch:16},{wch:10},{wch:40}];
+  XLSX.utils.book_append_sheet(wb,'PMO TIGRE',ws);
+  XLSX.writeFile(wb,'PMO-TIGRE-BKO.xlsx');
+  toast('Excel baixado!','ok');
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){cmv(e);cme(e);}});
+['fs','fr','ft','fst','frc','fm'].forEach(function(id){
+  document.getElementById(id).addEventListener('input',render);
+  document.getElementById(id).addEventListener('change',render);
 });
+var AUTO_URL='https://raw.githubusercontent.com/lilianbasaia-cloud/PMO-TIGRE/main/PMO%20TIGRE%20-%20BKO.xlsx';
+loadData();
+pf();
+render();
+var stored=localStorage.getItem(STORAGE_KEY);
+if(stored){
+  document.getElementById('hts').textContent='Dados locais';
+}else{
+  document.getElementById('hts').textContent='Carregando...';
+  loadFromURL(AUTO_URL,true);
+}
+
 </script>
 </body>
 </html>
